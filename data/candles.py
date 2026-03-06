@@ -1,5 +1,6 @@
 import http.client
 from datetime import datetime, timezone, timedelta
+import pandas as pd
 import json
 import os
 import sys
@@ -9,15 +10,20 @@ sys.path.append(parent_dir)
 from constants import REST_API_DOMAIN, READ_ONLY_TOKEN, GET_CANDLES_REST, YDEX_TICKER
 
 
+def process_daily_candles(candles_json):
+    """parsing json data to pandas dataframe"""
+    print(candles_json.keys())
+
+
 # https://developer.tbank.ru/invest/api/market-data-service-get-candles
-def get_ydex_candles_data(from_utc, to_utc, interval="CANDLE_INTERVAL_DAY"):
+def get_candles_data(from_utc, to_utc, instrument_id, interval="CANDLE_INTERVAL_DAY") -> dict:
     conn = http.client.HTTPSConnection(REST_API_DOMAIN)
 
     payload = json.dumps({
+        "from": from_utc,
         "to": to_utc,
-        "from": "2026-02-02T09:15:19.971Z",
         "interval": interval,
-        "instrumentId": f"{YDEX_TICKER}",
+        "instrumentId": f"{instrument_id}",
     })
 
     headers = {
@@ -29,15 +35,20 @@ def get_ydex_candles_data(from_utc, to_utc, interval="CANDLE_INTERVAL_DAY"):
     conn.request("POST", GET_CANDLES_REST, payload, headers)
     res = conn.getresponse()
     data = res.read()
-    print(data.decode("utf-8"))
+    data = data.decode("utf-8")
+
+    # json string to dictionary
+    return json.loads(data)
+
+
+def get_datef(datetime):
+    # target is like  "2026-03-02T09:15:19.971Z"
+    return datetime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
 
 
 if __name__ == "__main__":
     now = datetime.now(timezone.utc)
     ten_days_ago = now - timedelta(days=10)
-    # target is like "2026-03-02T09:15:19.971Z", but 0 idea what does .971 means, milliseconds?
-    now_for_api = now.strftime('%Y-%m-%dT%H:%M:%SZ')
-    print(now)
-    print(now_for_api)
 
-    get_ydex_candles_data(str(ten_days_ago), now_for_api)
+    data = get_candles_data(get_datef(ten_days_ago), get_datef(now), YDEX_TICKER)
+    process_daily_candles(data)
