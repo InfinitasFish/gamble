@@ -1,24 +1,41 @@
 import http.client
 from datetime import datetime, timezone, timedelta
-import pandas as pd
+#import pandas as pd
 import json
 import os
 import sys
-parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(parent_dir)
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from constants import REST_API_DOMAIN, READ_ONLY_TOKEN, GET_CANDLES_REST, YDEX_TICKER
+from constants import REST_API_DOMAIN, READ_ONLY_TOKEN, GET_CANDLES_REST, YDEX_TICKER, CACHE_FPATH
 
 
-def process_daily_candles(candles_json):
-    """parsing json data to pandas dataframe"""
-    print(candles_json.keys())
+# def process_daily_candles(candles_json):
+#     """parsing json data to pandas dataframe"""
+#     print(candles_json.keys())
+
+
+def map_api_interval_short(interval: str) -> str:
+    full_to_short = {"CANDLE_INTERVAL_5_SEC": "5sec", "CANDLE_INTERVAL_10_SEC": "10sec", "CANDLE_INTERVAL_30_SEC": "30sec",
+                     "CANDLE_INTERVAL_1_MIN": "1min", "CANDLE_INTERVAL_2_MIN": "2min", "CANDLE_INTERVAL_3_MIN": "3min",
+                     "CANDLE_INTERVAL_5_MIN": "5min", "CANDLE_INTERVAL_10_MIN": "10min", "CANDLE_INTERVAL_15_MIN": "15min",
+                     "CANDLE_INTERVAL_30_MIN": "30min", "CANDLE_INTERVAL_2_HOUR": "2hour", "CANDLE_INTERVAL_HOUR": "hour",
+                     "CANDLE_INTERVAL_4_HOUR": "4hour", "CANDLE_INTERVAL_DAY": "day", "CANDLE_INTERVAL_WEEK": "week",
+                     "CANDLE_INTERVAL_MONTH": "month"}
+    return full_to_short.get(interval, '')
 
 
 # https://developer.tbank.ru/invest/api/market-data-service-get-candles
-def get_candles_data(from_utc, to_utc, instrument_id, interval="CANDLE_INTERVAL_DAY") -> dict:
-    conn = http.client.HTTPSConnection(REST_API_DOMAIN)
+# TODO: at some point better to make these 'await'
+def get_candles_data(from_utc: str, to_utc: str, instrument_id: str, interval: str="CANDLE_INTERVAL_DAY", cache_fpath: str=CACHE_FPATH) -> dict:
+    interval_short = map_api_interval_short(interval)
+    save_data_fpath = f"{instrument_id}_{interval_short}_{from_utc[:-5]}_{to_utc[:-5]}.json".replace(':', '').replace('-', '_')
+    save_data_fpath = os.path.join(cache_fpath, save_data_fpath)
+    if os.path.exists(save_data_fpath):
+        with open(save_data_fpath, 'r', encoding="utf-8") as f:
+            candles_data_dict = json.load(f)
+        return candles_data_dict
 
+    connection = http.client.HTTPSConnection(REST_API_DOMAIN)
     payload = json.dumps({
         "from": from_utc,
         "to": to_utc,
@@ -32,23 +49,24 @@ def get_candles_data(from_utc, to_utc, instrument_id, interval="CANDLE_INTERVAL_
         "Authorization": f"Bearer {READ_ONLY_TOKEN}"
     }
 
-    conn.request("POST", GET_CANDLES_REST, payload, headers)
-    res = conn.getresponse()
-    data = res.read()
-    data = data.decode("utf-8")
+    connection.request("POST", GET_CANDLES_REST, payload, headers)
+    response = connection.getresponse()
+    candles_data_dict = json.loads(response.read().decode("utf-8"))
 
-    # json string to dictionary
-    return json.loads(data)
+    with open(save_data_fpath, 'w', encoding="utf-8") as f:
+        json.dump(candles_data_dict, f)
+
+    return candles_data_dict
 
 
-def get_datef(datetime):
+def convert_datetime_api_format(datetime: datetime) -> str:
     # target is like  "2026-03-02T09:15:19.971Z"
-    return datetime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+    return datetime.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + 'Z'
 
 
 if __name__ == "__main__":
-    now = datetime.now(timezone.utc)
-    ten_days_ago = now - timedelta(days=10)
+    now = convert_datetime_api_format(datetime.now(timezone.utc))
+    ten_days_ago = convert_datetime_api_format(datetime.now(timezone.utc) - timedelta(days=10))
 
-    data = get_candles_data(get_datef(ten_days_ago), get_datef(now), YDEX_TICKER)
-    process_daily_candles(data)
+    ydex_candle_data = get_candles_data(ten_days_ago, now, YDEX_TICKER)
+    print(ydex_candle_data)

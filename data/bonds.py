@@ -1,16 +1,23 @@
+# tried to use it, but I don't understand how to pass SLL cert (Russian Trusted Root CA)
+# import requests
+# while http.client just works natively
 import http.client
 import json
 import os
 import sys
-parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(parent_dir)
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from constants import REST_API_DOMAIN, READ_ONLY_TOKEN, BOND_REST
+from constants import REST_API_DOMAIN, READ_ONLY_TOKEN, BOND_REST, BONDS_DATA_FPATH
 
 
 # https://developer.tbank.ru/invest/api/instruments-service-bonds
-def get_all_bonds_data(save_fpath):
-    conn = http.client.HTTPSConnection(REST_API_DOMAIN)
+def get_all_bonds_data(save_data_fpath: str=BONDS_DATA_FPATH) -> dict:
+    if os.path.exists(save_data_fpath):
+        with open(save_data_fpath, 'r', encoding="utf-8") as f:
+            bonds_data_dict = json.load(f)
+        return bonds_data_dict
+
+    connection = http.client.HTTPSConnection(REST_API_DOMAIN)
     payload = json.dumps({
         "instrumentStatus": "INSTRUMENT_STATUS_BASE",
         "instrumentExchange": "INSTRUMENT_EXCHANGE_UNSPECIFIED"
@@ -20,12 +27,16 @@ def get_all_bonds_data(save_fpath):
         "Accept": "application/json",
         "Authorization": f"Bearer {READ_ONLY_TOKEN}"
     }
-    conn.request("POST", BOND_REST, payload, headers)
-    res = conn.getresponse()
-    data = res.read()
-    with open(save_fpath, "w", encoding="utf-8") as f:
-        f.write(data.decode("utf-8"))
+    connection.request("POST", BOND_REST, payload, headers)
+    response = connection.getresponse()
+    bonds_data_dict = json.loads(response.read().decode("utf-8"))
+
+    with open(save_data_fpath, 'w', encoding="utf-8") as f:
+        json.dump(bonds_data_dict, f)
+
+    return bonds_data_dict
 
 
 if __name__ == "__main__":
-    get_all_bonds_data(save_fpath="./bonds_data.txt")
+    print(get_all_bonds_data(save_data_fpath=BONDS_DATA_FPATH))
+
