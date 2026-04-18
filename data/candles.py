@@ -1,6 +1,6 @@
 import http.client
 from datetime import datetime, timezone, timedelta
-#import pandas as pd
+import pandas as pd
 import json
 import os
 import sys
@@ -9,9 +9,22 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from constants import REST_API_DOMAIN, READ_ONLY_TOKEN, GET_CANDLES_REST, YDEX_TICKER, CACHE_FPATH
 
 
-# def process_daily_candles(candles_json):
-#     """parsing json data to pandas dataframe"""
-#     print(candles_json.keys())
+def get_daily_candles_df(candles_data: dict) -> pd.DataFrame:
+    """parsing json data to pandas dataframe for training"""
+    pass
+
+
+def inspect_candles_dict(candles_data: dict, space: int=0):
+    for i, (key, values) in enumerate(candles_data.items()):
+        print(f"{' ' * space}{key}:")
+        space += 2
+        if isinstance(values, list):
+            for item in values:
+                inspect_candles_dict(item, space)
+        elif isinstance(values, dict):
+            inspect_candles_dict(values, space)
+        else:
+            print(f"{' ' * space}{values}")
 
 
 def map_api_interval_short(interval: str) -> str:
@@ -26,7 +39,7 @@ def map_api_interval_short(interval: str) -> str:
 
 # https://developer.tbank.ru/invest/api/market-data-service-get-candles
 # TODO: at some point better to make these 'await'
-def get_candles_data(from_utc: str, to_utc: str, instrument_id: str, interval: str="CANDLE_INTERVAL_DAY", cache_fpath: str=CACHE_FPATH) -> dict:
+def get_candles_data(from_utc: str, to_utc: str, instrument_id: str, interval: str="CANDLE_INTERVAL_DAY", cache_fpath: str=CACHE_FPATH, to_cache: bool=False) -> dict:
     interval_short = map_api_interval_short(interval)
     save_data_fpath = f"{instrument_id}_{interval_short}_{from_utc[:-5]}_{to_utc[:-5]}.json".replace(':', '').replace('-', '_')
     save_data_fpath = os.path.join(cache_fpath, save_data_fpath)
@@ -53,9 +66,16 @@ def get_candles_data(from_utc: str, to_utc: str, instrument_id: str, interval: s
     response = connection.getresponse()
     candles_data_dict = json.loads(response.read().decode("utf-8"))
 
-    with open(save_data_fpath, 'w', encoding="utf-8") as f:
-        json.dump(candles_data_dict, f)
+    if to_cache:
+        with open(save_data_fpath, 'w', encoding="utf-8") as f:
+            json.dump(candles_data_dict, f)
 
+    return candles_data_dict
+
+
+def load_candles_data(candles_data_fpath: str) -> dict:
+    with open(candles_data_fpath, 'r', encoding="utf-8") as f:
+        candles_data_dict = json.load(f)
     return candles_data_dict
 
 

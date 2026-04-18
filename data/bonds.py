@@ -11,9 +11,9 @@ from constants import REST_API_DOMAIN, READ_ONLY_TOKEN, BOND_REST, BONDS_DATA_FP
 
 
 # https://developer.tbank.ru/invest/api/instruments-service-bonds
-def get_all_bonds_data(save_data_fpath: str=BONDS_DATA_FPATH) -> dict:
-    if os.path.exists(save_data_fpath):
-        with open(save_data_fpath, 'r', encoding="utf-8") as f:
+def get_all_bonds_data(cache_fpath: str=BONDS_DATA_FPATH, to_cache: bool=True) -> dict:
+    if os.path.exists(cache_fpath):
+        with open(cache_fpath, 'r', encoding="utf-8") as f:
             bonds_data_dict = json.load(f)
         return bonds_data_dict
 
@@ -31,12 +31,13 @@ def get_all_bonds_data(save_data_fpath: str=BONDS_DATA_FPATH) -> dict:
     response = connection.getresponse()
     bonds_data_dict = json.loads(response.read().decode("utf-8"))
 
-    with open(save_data_fpath, 'w', encoding="utf-8") as f:
-        json.dump(bonds_data_dict, f)
+    if to_cache:
+        with open(cache_fpath, 'w', encoding="utf-8") as f:
+            json.dump(bonds_data_dict, f)
 
     return bonds_data_dict
 
 
 if __name__ == "__main__":
-    print(get_all_bonds_data(save_data_fpath=BONDS_DATA_FPATH))
+    print(get_all_bonds_data(cache_fpath=BONDS_DATA_FPATH))
 

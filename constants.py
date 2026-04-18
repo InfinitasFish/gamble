@@ -21,3 +21,4 @@ YDEX_TICKER = "YDEX_TQBR"
 # cache
 CACHE_FPATH = os.path.join(ROOT_DIR, "cache")
 BONDS_DATA_FPATH = os.path.join(CACHE_FPATH, "all_bonds_data.json")
+
