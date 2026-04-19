@@ -1,5 +1,6 @@
 import http.client
 from datetime import datetime, timezone, timedelta
+from collections import defaultdict
 import pandas as pd
 import json
 import os
@@ -11,20 +12,31 @@ from constants import REST_API_DOMAIN, READ_ONLY_TOKEN, GET_CANDLES_REST, YDEX_T
 
 def get_daily_candles_df(candles_data: dict) -> pd.DataFrame:
     """parsing json data to pandas dataframe for training"""
-    pass
+    candles_data_for_df = defaultdict(list)
+    for candle in candles_data["candles"]:
+        candles_data_for_df["open"].append(float(f"{candle['open']['units']}.{candle['open']['nano']}"))
+        candles_data_for_df["high"].append(float(f"{candle['high']['units']}.{candle['high']['nano']}"))
+        candles_data_for_df["low"].append(float(f"{candle['low']['units']}.{candle['low']['nano']}"))
+        candles_data_for_df["close"].append(float(f"{candle['close']['units']}.{candle['close']['nano']}"))
+        candles_data_for_df["volume"].append(candle["volume"])
+        candles_data_for_df["volumeBuy"].append(candle["volumeBuy"])
+        candles_data_for_df["volumeSell"].append(candle["volumeSell"])
+        candles_data_for_df["time"].append(candle["time"])
+
+    candles_df = pd.DataFrame.from_dict(candles_data_for_df)
+    return candles_df
 
 
 def inspect_candles_dict(candles_data: dict, space: int=0):
     for i, (key, values) in enumerate(candles_data.items()):
         print(f"{' ' * space}{key}:")
-        space += 2
         if isinstance(values, list):
             for item in values:
-                inspect_candles_dict(item, space)
+                inspect_candles_dict(item, space + 2)
         elif isinstance(values, dict):
-            inspect_candles_dict(values, space)
+            inspect_candles_dict(values, space + 2)
         else:
-            print(f"{' ' * space}{values}")
+            print(f"{' ' * (space + 2)}{values}")
 
 
 def map_api_interval_short(interval: str) -> str:
