@@ -1,17 +1,44 @@
+from array import array
+from typing import Tuple
 import http.client
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
-import pandas as pd
 import json
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 
-from constants import REST_API_DOMAIN, READ_ONLY_TOKEN, GET_CANDLES_REST, YDEX_TICKER, CACHE_FPATH
+from constants import CANDLES_UNI_FEATURE, TS_SEQUENCE_LEN, REST_API_DOMAIN, READ_ONLY_TOKEN, GET_CANDLES_REST, YDEX_TICKER, CACHE_FPATH
 
 
-def get_daily_candles_df(candles_data: dict) -> pd.DataFrame:
+def split_sequence(sequence: list | np.ndarray, n_steps: int=TS_SEQUENCE_LEN) -> Tuple[np.ndarray, np.ndarray]:
+    X = list()
+    y = list()
+    for i in range(len(sequence) - n_steps):
+        X.append(sequence[i:(i + n_steps)])
+        y.append(sequence[i + n_steps])
+
+    return np.array(X), np.array(y)
+
+
+def get_candles_uni_xy_pipe(from_utc: str, to_utc: str, instrument_id: str, interval: str="CANDLE_INTERVAL_DAY", cache_fpath: str=CACHE_FPATH, to_cache: bool=False) -> Tuple[np.ndarray, np.ndarray]:
+    candles_data = get_candles_data(from_utc, to_utc, instrument_id, interval, cache_fpath, to_cache)
+    candles_df = get_candles_df(candles_data, CANDLES_UNI_FEATURE)
+    sequence = candles_df.to_numpy()
+
+    sc = StandardScaler()
+    sequence = sc.fit_transform(sequence)
+    X, y = split_sequence(sequence, TS_SEQUENCE_LEN)
+    return X, y
+
+
+def get_candles_df(candles_data: dict, select_features: list=None) -> pd.DataFrame:
     """parsing json data to pandas dataframe for training"""
+
     candles_data_for_df = defaultdict(list)
     for candle in candles_data["candles"]:
         candles_data_for_df["open"].append(float(f"{candle['open']['units']}.{candle['open']['nano']}"))
@@ -24,6 +51,8 @@ def get_daily_candles_df(candles_data: dict) -> pd.DataFrame:
         candles_data_for_df["time"].append(candle["time"])
 
     candles_df = pd.DataFrame.from_dict(candles_data_for_df)
+    if select_features is not None:
+        candles_df = candles_df[select_features]
     return candles_df
 
 
@@ -92,7 +121,7 @@ def load_candles_data(candles_data_fpath: str) -> dict:
 
 
 def convert_datetime_api_format(datetime: datetime) -> str:
-    # target is like  "2026-03-02T09:15:19.971Z"
+    # target is like "2026-03-02T09:15:19.971Z"
     return datetime.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + 'Z'
 
 

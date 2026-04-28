@@ -2,11 +2,19 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
+# tokens
+READ_ONLY_TOKEN = os.environ["READ_ONLY_TOKEN"]
+
 # she bounces on my root until I peak
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 
-# tokens
-READ_ONLY_TOKEN = os.environ["READ_ONLY_TOKEN"]
+# models
+CANDLES_MULTI_FEATURES = ["open", "close", "high", "low"]
+CANDLES_UNI_FEATURE = ["close"]
+MAX_ITER = 1000
+TS_SEQUENCE_LEN = 5
+TEST_SIZE = 0.33
+RANDOM_STATE = 59
 
 # api calls
 REST_API_DOMAIN = "invest-public-api.tbank.ru"
