@@ -1,4 +1,3 @@
-from array import array
 from typing import Tuple
 import http.client
 from datetime import datetime, timezone, timedelta
@@ -6,6 +5,9 @@ from collections import defaultdict
 import json
 import os
 import sys
+
+from pandas.conftest import index
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import pandas as pd
 import numpy as np
@@ -28,10 +30,10 @@ def split_sequence(sequence: list | np.ndarray, n_steps: int=TS_SEQUENCE_LEN) ->
 def get_candles_uni_xy_pipe(from_utc: str, to_utc: str, instrument_id: str, interval: str="CANDLE_INTERVAL_DAY", cache_fpath: str=CACHE_FPATH, to_cache: bool=False) -> Tuple[np.ndarray, np.ndarray]:
     candles_data = get_candles_data(from_utc, to_utc, instrument_id, interval, cache_fpath, to_cache)
     candles_df = get_candles_df(candles_data, CANDLES_UNI_FEATURE)
-    sequence = candles_df.to_numpy()
+    sequence = candles_df.to_numpy().flatten().reshape(-1, 1)
 
     sc = StandardScaler()
-    sequence = sc.fit_transform(sequence)
+    sequence = sc.fit_transform(sequence).reshape(-1)
     X, y = split_sequence(sequence, TS_SEQUENCE_LEN)
     return X, y
 
