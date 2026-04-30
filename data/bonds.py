@@ -1,6 +1,7 @@
 # tried to use it, but I don't understand how to pass SLL cert (Russian Trusted Root CA)
 # import requests
 # while http.client just works natively
+# TODO: maybe use Golang then brotherman? for requests... good practice...
 import http.client
 import json
 import os
@@ -31,7 +32,7 @@ def get_all_bonds_data(cache_fpath: str=BONDS_DATA_FPATH, to_cache: bool=True) -
     response = connection.getresponse()
     bonds_data_dict = json.loads(response.read().decode("utf-8"))
 
-    if to_cache:
+    if to_cache and not os.path.exists(cache_fpath):
         with open(cache_fpath, 'w', encoding="utf-8") as f:
             json.dump(bonds_data_dict, f)
 

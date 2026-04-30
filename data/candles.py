@@ -1,41 +1,13 @@
-from typing import Tuple
 import http.client
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 import json
 import os
 import sys
-
-from pandas.conftest import index
-
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
 
-from constants import CANDLES_UNI_FEATURE, TS_SEQUENCE_LEN, REST_API_DOMAIN, READ_ONLY_TOKEN, GET_CANDLES_REST, YDEX_TICKER, CACHE_FPATH
-
-
-def split_sequence(sequence: list | np.ndarray, n_steps: int=TS_SEQUENCE_LEN) -> Tuple[np.ndarray, np.ndarray]:
-    X = list()
-    y = list()
-    for i in range(len(sequence) - n_steps):
-        X.append(sequence[i:(i + n_steps)])
-        y.append(sequence[i + n_steps])
-
-    return np.array(X), np.array(y)
-
-
-def get_candles_uni_xy_pipe(from_utc: str, to_utc: str, instrument_id: str, interval: str="CANDLE_INTERVAL_DAY", cache_fpath: str=CACHE_FPATH, to_cache: bool=False) -> Tuple[np.ndarray, np.ndarray]:
-    candles_data = get_candles_data(from_utc, to_utc, instrument_id, interval, cache_fpath, to_cache)
-    candles_df = get_candles_df(candles_data, CANDLES_UNI_FEATURE)
-    sequence = candles_df.to_numpy().flatten().reshape(-1, 1)
-
-    sc = StandardScaler()
-    sequence = sc.fit_transform(sequence).reshape(-1)
-    X, y = split_sequence(sequence, TS_SEQUENCE_LEN)
-    return X, y
+from constants import REST_API_DOMAIN, READ_ONLY_TOKEN, GET_CANDLES_REST, YDEX_TICKER, CACHE_FPATH
 
 
 def get_candles_df(candles_data: dict, select_features: list=None) -> pd.DataFrame:
@@ -109,7 +81,7 @@ def get_candles_data(from_utc: str, to_utc: str, instrument_id: str, interval: s
     response = connection.getresponse()
     candles_data_dict = json.loads(response.read().decode("utf-8"))
 
-    if to_cache:
+    if to_cache and not os.path.exists(save_data_fpath):
         with open(save_data_fpath, 'w', encoding="utf-8") as f:
             json.dump(candles_data_dict, f)
 

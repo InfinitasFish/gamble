@@ -12,6 +12,4 @@ __pycache__
 cache/
 
 # more junk
-preproc/xy.py
-model/mlp.py
 temp.py
