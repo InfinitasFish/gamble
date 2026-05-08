@@ -5,16 +5,16 @@ import sys
 sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 from scipy import stats
 
-from constants import YDEX_TICKER, TS_SEQUENCE_LEN
+from constants import YDEX_TICKER, TS_MAX_SEQUENCE_LEN, RANDOM_STATE
 from data.candles import convert_datetime_api_format
-from model.mlp import init_mlp_uni_reg, train_mlp_uni_reg, calc_metrics_mlp_uni_reg
-from preproc.xy import get_candles_uni_xy_pipe
+from model.mlp import init_mlp_uni_reg, outer_seq_len_search, calc_metrics_mlp_uni_reg, log_metrics
+from preproc.xy import get_candles_seq_uni_pipe, split_seq_xy_pipe
 
 parser = argparse.ArgumentParser()
 # no '--' means positional argument
 parser.add_argument("from_iso", type=str, nargs='?', default="2024-01-01", help="Date to take candles data from (iso format)")
 parser.add_argument("to_iso", type=str, nargs='?', default="2026-01-01", help="Date to take candles data up to (iso format)")
-parser.add_argument("--seq_len", type=int, nargs='?', default=TS_SEQUENCE_LEN, help="Number of candles for training and predicting next value")
+parser.add_argument("--seq_len", type=int, nargs='?', default=TS_MAX_SEQUENCE_LEN, help="Number of candles for training and predicting next value")
 
 
 def main():
@@ -33,11 +33,16 @@ def main():
                            "max_iter": stats.randint(1000, 3000)}
 
     # normalization doesn't work btw
-    X_train, X_test, y_train, y_test = get_candles_uni_xy_pipe(from_iso, to_iso, YDEX_TICKER, to_cache=True,
-                                                               sequence_len=seq_len, test_size=0.05, normalize=False)
-    print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
-    mlp_reg = train_mlp_uni_reg(init_mlp_uni_reg(), X_train, y_train, param_distr=search_params_distr, verbose=1)
-    calc_metrics_mlp_uni_reg(mlp_reg, X_test, y_test, X_train, y_train)
+    local_test_size = 0.05
+    ts_sequence = get_candles_seq_uni_pipe(from_iso, to_iso, YDEX_TICKER, to_cache=True, normalize=False)
+    print(ts_sequence.shape)
+    mlp_reg, seq_len = outer_seq_len_search(init_mlp_uni_reg(), "Root Mean Squared Error", ts_sequence,
+                                            test_size=local_test_size, param_distr=search_params_distr, verbose=1, random_state=RANDOM_STATE)
+
+    # splitting data the same way as for the best mlp
+    X_train, X_test, y_train, y_test = split_seq_xy_pipe(ts_sequence, seq_len, test_size=local_test_size, random_state=RANDOM_STATE)
+    metrics = calc_metrics_mlp_uni_reg(mlp_reg, X_test, y_test, X_train, y_train)
+    log_metrics(metrics)
 
 
 if __name__ == "__main__":

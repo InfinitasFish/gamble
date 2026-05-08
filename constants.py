@@ -12,7 +12,8 @@ ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 CANDLES_MULTI_FEATURES = ["open", "close", "high", "low"]
 CANDLES_UNI_FEATURE = ["close"]
 MAX_ITER = 1000
-TS_SEQUENCE_LEN = 10
+TS_MAX_SEQUENCE_LEN = 10
+TS_MIN_SEQUENCE_LEN = 3
 TEST_SIZE = 0.33
 CV_FOLDS = 10
 RANDOM_STATE = 59
@@ -28,6 +29,6 @@ YDEX_ISIN = "RU000A107T19"
 YDEX_TICKER = "YDEX_TQBR"
 
 # cache
-CACHE_FPATH = os.path.join(ROOT_DIR, "cache")
-BONDS_DATA_FPATH = os.path.join(CACHE_FPATH, "all_bonds_data.json")
+CACHE_DIR_FPATH = os.path.join(ROOT_DIR, "cache")
+BONDS_DATA_FPATH = os.path.join(CACHE_DIR_FPATH, "all_bonds_data.json")
 

@@ -7,7 +7,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import pandas as pd
 
-from constants import REST_API_DOMAIN, READ_ONLY_TOKEN, GET_CANDLES_REST, YDEX_TICKER, CACHE_FPATH
+from constants import REST_API_DOMAIN, READ_ONLY_TOKEN, GET_CANDLES_REST, YDEX_TICKER, CACHE_DIR_FPATH
 
 
 def get_candles_df(candles_data: dict, select_features: list=None) -> pd.DataFrame:
@@ -54,7 +54,7 @@ def map_api_interval_short(interval: str) -> str:
 
 # https://developer.tbank.ru/invest/api/market-data-service-get-candles
 # TODO: at some point better to make these 'await'
-def get_candles_data(from_utc: str, to_utc: str, instrument_id: str, interval: str="CANDLE_INTERVAL_DAY", cache_fpath: str=CACHE_FPATH, to_cache: bool=False) -> dict:
+def get_candles_data(from_utc: str, to_utc: str, instrument_id: str, interval: str="CANDLE_INTERVAL_DAY", cache_fpath: str=CACHE_DIR_FPATH, to_cache: bool=False) -> dict:
     interval_short = map_api_interval_short(interval)
     save_data_fpath = f"{instrument_id}_{interval_short}_{from_utc[:-5]}_{to_utc[:-5]}.json".replace(':', '').replace('-', '_')
     save_data_fpath = os.path.join(cache_fpath, save_data_fpath)
