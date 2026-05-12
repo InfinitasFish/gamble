@@ -56,14 +56,19 @@ def get_weighted_moving_average_why(ts_data: np.ndarray | pd.Series, window: int
     return np.array(wma)
 
 
-# most common for financials
+# most common for financials, also can be calculated at the start of sequence
 def get_exponential_moving_average(ts_data: np.ndarray | pd.Series, window: int=TS_MIN_SEQUENCE_LEN) -> np.ndarray:
-    pass
+    if isinstance(ts_data, pd.Series):
+        return ts_data.ewm(span=window, adjust=False).mean().to_numpy()
+    elif isinstance(ts_data, np.ndarray):
+        return pd.Series(ts_data).ewm(span=window, adjust=False).mean().to_numpy()
+    else:
+        raise ValueError(f"Expected (np.ndarray | pd.Series) type for ts_data")
 
 
 if __name__ == "__main__":
     array = pd.Series(np.array([10, 8, 1, 2, 3, 4, 5, 6, 7, 3, 4, 5, 6, 7, 8, 3, 2, 10, 9, 8, 3]))
-    ma = get_weighted_moving_average(array, 5)
+    ma = get_exponential_moving_average(array, 5)
     myma = get_weighted_moving_average(array, 5)
     print(array.shape, ma.shape)
     print(myma.shape)
