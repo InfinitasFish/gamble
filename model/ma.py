@@ -2,11 +2,18 @@
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+from enum import Enum
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
 from constants import TS_MIN_SEQUENCE_LEN
+
+
+class MovingAverageType(Enum):
+    SimpleMA = 0,
+    WeightedMA = 1,
+    ExponentialMA = 2,
 
 
 def get_simple_moving_average(ts_data: np.ndarray | pd.Series, window: int=TS_MIN_SEQUENCE_LEN) -> np.ndarray:
@@ -41,7 +48,7 @@ def get_weighted_moving_average(ts_data: np.ndarray | pd.Series, window: int=TS_
         raise ValueError(f"Expected (np.ndarray | pd.Series) type for ts_data")
 
 
-def get_weighted_moving_average_why(ts_data: np.ndarray | pd.Series, window: int=TS_MIN_SEQUENCE_LEN, weights=None) -> np.ndarray:
+def get_weighted_moving_average_why(ts_data: np.ndarray | pd.Series, window: int=TS_MIN_SEQUENCE_LEN, weights: list[int]=None) -> np.ndarray:
     # because I'm cool
     if weights is None:
         weights = np.arange(1, window + 1)
@@ -66,15 +73,38 @@ def get_exponential_moving_average(ts_data: np.ndarray | pd.Series, window: int=
         raise ValueError(f"Expected (np.ndarray | pd.Series) type for ts_data")
 
 
-if __name__ == "__main__":
-    array = pd.Series(np.array([10, 8, 1, 2, 3, 4, 5, 6, 7, 3, 4, 5, 6, 7, 8, 3, 2, 10, 9, 8, 3]))
-    ma = get_exponential_moving_average(array, 5)
-    myma = get_weighted_moving_average(array, 5)
-    print(array.shape, ma.shape)
-    print(myma.shape)
-    print(ma[:10])
-    print(myma[:10])
-    plt.plot(array)
-    plt.plot(ma)
-    plt.plot(myma)
+def plot_ma_for_timeseries(ts_data: np.ndarray | pd.Series, window: int=TS_MIN_SEQUENCE_LEN, weights: list[int]=None,
+                           ma_type: MovingAverageType=MovingAverageType.SimpleMA):
+    match ma_type:
+        case MovingAverageType.SimpleMA:
+            ma_label = "SMA"
+            vals = get_simple_moving_average(ts_data, window)
+        case MovingAverageType.WeightedMA:
+            ma_label = "WMA"
+            vals = get_weighted_moving_average(ts_data, window, weights)
+        case MovingAverageType.ExponentialMA:
+            ma_label = "EMA"
+            vals = get_exponential_moving_average(ts_data, window)
+        case _:
+            raise ValueError("Unknown type of Moving Average is given")
+
+    plt.plot(np.arange(len(ts_data)), ts_data, label="Timeseries")
+    plt.plot(np.arange(len(vals)), vals, label=f"{ma_label} {window}")
+    plt.xlabel("time")
+    plt.ylabel("values")
+    plt.legend(loc="best")
     plt.show()
+
+
+if __name__ == "__main__":
+    from datetime import datetime
+    from data.candles import convert_datetime_api_format
+    from preproc.xy import get_candles_seq_uni
+    from constants import YDEX_TICKER
+
+    from_iso = convert_datetime_api_format(datetime.fromisoformat("2024-01-01"))
+    to_iso = convert_datetime_api_format(datetime.fromisoformat("2026-01-01"))
+    ts_data = get_candles_seq_uni(from_iso, to_iso, YDEX_TICKER, to_cache=True).reshape(-1)
+    plot_ma_for_timeseries(ts_data, window=10, ma_type=MovingAverageType.ExponentialMA)
+    plot_ma_for_timeseries(ts_data, window=20, ma_type=MovingAverageType.ExponentialMA)
+    plot_ma_for_timeseries(ts_data, window=50, ma_type=MovingAverageType.ExponentialMA)

@@ -8,7 +8,7 @@ from scipy import stats
 from constants import YDEX_TICKER, TS_MAX_SEQUENCE_LEN, RANDOM_STATE
 from data.candles import convert_datetime_api_format
 from model.mlp import init_mlp_uni_reg, outer_seq_len_search, calc_metrics_mlp_uni_reg, log_metrics
-from preproc.xy import get_candles_seq_uni_pipe, split_seq_xy_pipe
+from preproc.xy import get_candles_seq_uni, normalize_seq_uni, split_seq_xy_pipe, NormalizationType
 
 parser = argparse.ArgumentParser()
 # no '--' means positional argument
@@ -21,9 +21,8 @@ def main():
     args = parser.parse_args()
     from_iso = convert_datetime_api_format(datetime.fromisoformat(args.from_iso))
     to_iso = convert_datetime_api_format(datetime.fromisoformat(args.to_iso))
-    seq_len = args.seq_len
 
-    # todo: add like another outer loop to search best TS_SEQUENCE_LEN
+
     search_params_distr = {"loss": ["squared_error"],
                            "learning_rate": ["constant", "adaptive"],
                            "hidden_layer_sizes": [(50,), (100,), (150,), (200,), (50, 50), (100, 100), (150, 150), (200, 200)],
@@ -32,9 +31,10 @@ def main():
                            # [loc, scale]
                            "max_iter": stats.randint(1000, 3000)}
 
-    # normalization doesn't work btw
+    # standard normalization doesn't work btw
     local_test_size = 0.05
-    ts_sequence = get_candles_seq_uni_pipe(from_iso, to_iso, YDEX_TICKER, to_cache=True, normalize=False)
+    ts_sequence = get_candles_seq_uni(from_iso, to_iso, YDEX_TICKER, to_cache=True)
+    ts_sequence = normalize_seq_uni(ts_sequence, NormalizationType.NoNormalization)
     print(ts_sequence.shape)
     mlp_reg, seq_len = outer_seq_len_search(init_mlp_uni_reg(), "Root Mean Squared Error", ts_sequence,
                                             test_size=local_test_size, param_distr=search_params_distr, verbose=1, random_state=RANDOM_STATE)

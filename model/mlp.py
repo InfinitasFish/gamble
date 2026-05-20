@@ -8,7 +8,7 @@ from sklearn.experimental import enable_halving_search_cv
 from sklearn.model_selection import HalvingRandomSearchCV
 from sklearn.metrics import root_mean_squared_error, mean_absolute_error, median_absolute_error, mean_absolute_percentage_error
 
-from preproc.xy import get_candles_seq_uni_pipe, split_seq_xy_pipe
+from preproc.xy import split_seq_xy_pipe
 from constants import RANDOM_STATE, MAX_ITER, CV_FOLDS, TS_MIN_SEQUENCE_LEN, TS_MAX_SEQUENCE_LEN, TEST_SIZE
 
 
