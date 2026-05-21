@@ -7,8 +7,9 @@ from scipy import stats
 
 from constants import YDEX_TICKER, TS_MAX_SEQUENCE_LEN, RANDOM_STATE
 from data.candles import convert_datetime_api_format
-from model.mlp import init_mlp_uni_reg, outer_seq_len_search, calc_metrics_mlp_uni_reg, log_metrics
-from preproc.xy import get_candles_seq_uni, normalize_seq_uni, split_seq_xy_pipe, NormalizationType
+from model.mlp import (init_mlp_uni_reg, outer_seq_len_search, fit_mlp_uni_reg, predict_uni_next_price,
+                       calc_metrics_mlp_uni_reg, log_metrics)
+from preproc.xy import get_candles_seq_uni, normalize_seq_uni, split_sequence, split_seq_xy_pipe, NormType
 
 parser = argparse.ArgumentParser()
 # no '--' means positional argument
@@ -34,7 +35,8 @@ def main():
     # standard normalization doesn't work btw
     local_test_size = 0.05
     ts_sequence = get_candles_seq_uni(from_iso, to_iso, YDEX_TICKER, to_cache=True)
-    ts_sequence = normalize_seq_uni(ts_sequence, NormalizationType.NoNormalization)
+    # TODO: bad normalization
+    ts_sequence = normalize_seq_uni(ts_sequence, NormType.NoNorm)
     print(ts_sequence.shape)
     mlp_reg, seq_len = outer_seq_len_search(init_mlp_uni_reg(), "Root Mean Squared Error", ts_sequence,
                                             test_size=local_test_size, param_distr=search_params_distr, verbose=1, random_state=RANDOM_STATE)
@@ -43,6 +45,15 @@ def main():
     X_train, X_test, y_train, y_test = split_seq_xy_pipe(ts_sequence, seq_len, test_size=local_test_size, random_state=RANDOM_STATE)
     metrics = calc_metrics_mlp_uni_reg(mlp_reg, X_test, y_test, X_train, y_train)
     log_metrics(metrics)
+
+    # full data fit, metrics, predict
+    mlp_reg = fit_mlp_uni_reg(mlp_reg, ts_sequence, seq_len)
+    X, y = split_sequence(ts_sequence, seq_len)
+    metrics = calc_metrics_mlp_uni_reg(mlp_reg, X, y)
+    log_metrics(metrics)
+
+    next_day_pred = predict_uni_next_price(mlp_reg, ts_sequence, seq_len)
+    print(f"\nPrediction for the day after {args.to_iso} is {next_day_pred:.4f}")
 
 
 if __name__ == "__main__":

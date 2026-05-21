@@ -1,10 +1,6 @@
 from typing import Tuple
 import os
 import sys
-
-from matplotlib.patheffects import Normal
-from sympy import sequence
-
 sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 from enum import Enum
 import numpy as np
@@ -15,8 +11,8 @@ from constants import TS_MAX_SEQUENCE_LEN, CACHE_DIR_FPATH, CANDLES_UNI_FEATURE,
 from data.candles import get_candles_data, get_candles_df
 
 
-class NormalizationType(Enum):
-    NoNormalization = 0,
+class NormType(Enum):
+    NoNorm = 0,
     Standardize = 1,
     MinMax = 2,
 
@@ -47,14 +43,15 @@ def get_candles_seq_uni(from_utc: str, to_utc: str, instrument_id: str, interval
     return sequence
 
 
-def normalize_seq_uni(ts_data: np.ndarray, norm_type: NormalizationType=NormalizationType.Standardize) -> np.ndarray:
+# TODO: I guess fitting scaler on full sequence and not just X_train isn't a good idea brotherman
+def normalize_seq_uni(ts_data: np.ndarray, norm_type: NormType=NormType.Standardize) -> np.ndarray:
     match norm_type:
-        case NormalizationType.NoNormalization:
+        case NormType.NoNorm:
             sequence = ts_data.reshape(-1)
-        case NormalizationType.Standardize:
+        case NormType.Standardize:
             sc = StandardScaler()
             sequence = sc.fit_transform(ts_data).reshape(-1)
-        case NormalizationType.MinMax:
+        case NormType.MinMax:
             mm = MinMaxScaler()
             sequence = mm.fit_transform(ts_data).reshape(-1)
         case _:

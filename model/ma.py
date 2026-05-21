@@ -10,10 +10,10 @@ import matplotlib.pyplot as plt
 from constants import TS_MIN_SEQUENCE_LEN
 
 
-class MovingAverageType(Enum):
+class MAType(Enum):
     SimpleMA = 0,
     WeightedMA = 1,
-    ExponentialMA = 2,
+    ExponentMA = 2,
 
 
 def get_simple_moving_average(ts_data: np.ndarray | pd.Series, window: int=TS_MIN_SEQUENCE_LEN) -> np.ndarray:
@@ -74,15 +74,15 @@ def get_exponential_moving_average(ts_data: np.ndarray | pd.Series, window: int=
 
 
 def plot_ma_for_timeseries(ts_data: np.ndarray | pd.Series, window: int=TS_MIN_SEQUENCE_LEN, weights: list[int]=None,
-                           ma_type: MovingAverageType=MovingAverageType.SimpleMA):
+                           ma_type: MAType=MAType.SimpleMA):
     match ma_type:
-        case MovingAverageType.SimpleMA:
+        case MAType.SimpleMA:
             ma_label = "SMA"
             vals = get_simple_moving_average(ts_data, window)
-        case MovingAverageType.WeightedMA:
+        case MAType.WeightedMA:
             ma_label = "WMA"
             vals = get_weighted_moving_average(ts_data, window, weights)
-        case MovingAverageType.ExponentialMA:
+        case MAType.ExponentMA:
             ma_label = "EMA"
             vals = get_exponential_moving_average(ts_data, window)
         case _:
@@ -105,6 +105,6 @@ if __name__ == "__main__":
     from_iso = convert_datetime_api_format(datetime.fromisoformat("2024-01-01"))
     to_iso = convert_datetime_api_format(datetime.fromisoformat("2026-01-01"))
     ts_data = get_candles_seq_uni(from_iso, to_iso, YDEX_TICKER, to_cache=True).reshape(-1)
-    plot_ma_for_timeseries(ts_data, window=10, ma_type=MovingAverageType.ExponentialMA)
-    plot_ma_for_timeseries(ts_data, window=20, ma_type=MovingAverageType.ExponentialMA)
-    plot_ma_for_timeseries(ts_data, window=50, ma_type=MovingAverageType.ExponentialMA)
+    plot_ma_for_timeseries(ts_data, window=10, ma_type=MAType.ExponentMA)
+    plot_ma_for_timeseries(ts_data, window=20, ma_type=MAType.ExponentMA)
+    plot_ma_for_timeseries(ts_data, window=50, ma_type=MAType.ExponentMA)
