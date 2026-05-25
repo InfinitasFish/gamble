@@ -27,6 +27,7 @@ GET_CANDLES_REST = "/rest/tinkoff.public.invest.api.contract.v1.MarketDataServic
 # actives idxs
 YDEX_ISIN = "RU000A107T19"
 YDEX_TICKER = "YDEX_TQBR"
+# TODO: add other tickers pls
 
 # cache
 CACHE_DIR_FPATH = os.path.join(ROOT_DIR, "cache")

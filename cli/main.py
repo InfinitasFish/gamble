@@ -13,8 +13,8 @@ from preproc.xy import get_candles_seq_uni, normalize_seq_uni, split_sequence, s
 
 parser = argparse.ArgumentParser()
 # no '--' means positional argument
-parser.add_argument("from_iso", type=str, nargs='?', default="2024-01-01", help="Date to take candles data from (iso format)")
-parser.add_argument("to_iso", type=str, nargs='?', default="2026-01-01", help="Date to take candles data up to (iso format)")
+parser.add_argument("--from_iso", type=str, nargs='?', default="2024-01-01", help="Date to take candles data from (iso format)")
+parser.add_argument("--to_iso", type=str, nargs='?', default="2026-01-01", help="Date to take candles data up to (iso format)")
 parser.add_argument("--seq_len", type=int, nargs='?', default=TS_MAX_SEQUENCE_LEN, help="Number of candles for training and predicting next value")
 
 
