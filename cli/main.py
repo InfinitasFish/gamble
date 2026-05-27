@@ -22,7 +22,9 @@ def main():
     args = parser.parse_args()
     from_iso = convert_datetime_api_format(datetime.fromisoformat(args.from_iso))
     to_iso = convert_datetime_api_format(datetime.fromisoformat(args.to_iso))
+
     norm_type = NormType.Standardize
+    scale_y = True
 
     search_params_distr = {"loss": ["squared_error"],
                            "learning_rate": ["constant", "adaptive"],
@@ -37,17 +39,17 @@ def main():
     ts_sequence = get_candles_seq_uni(from_iso, to_iso, YDEX_TICKER, to_cache=True)
     print(ts_sequence.shape)
     mlp_reg, seq_len = outer_seq_len_search(init_mlp_uni_reg(), "Root Mean Squared Error", ts_sequence, norm_type=norm_type,
-                                            test_size=local_test_size, min_len=7, param_distr=search_params_distr,
+                                            test_size=local_test_size, min_len=7, param_distr=search_params_distr, scale_y=scale_y,
                                             verbose=1, random_state=RANDOM_STATE)
 
     # full data fit, metrics, predict
-    mlp_reg, scaler = fit_mlp_uni_reg(mlp_reg, ts_sequence, seq_len, norm_type)
+    mlp_reg, X_scaler, y_scaler = fit_mlp_uni_reg(mlp_reg, ts_sequence, seq_len, norm_type, scale_y)
     X, y = split_sequence(ts_sequence, seq_len)
-    X, y, _ = normalize_sequence_uni(X, y, norm_type)
-    metrics = calc_metrics_mlp_uni_reg(mlp_reg, X, y)
+    X, y, _, _ = normalize_sequence_uni(X, y, norm_type, scale_y)
+    metrics = calc_metrics_mlp_uni_reg(mlp_reg, X, y, y_scaler)
     log_metrics(metrics)
 
-    next_day_pred = predict_uni_next_price(mlp_reg, ts_sequence, seq_len, scaler)
+    next_day_pred = predict_uni_next_price(mlp_reg, ts_sequence, seq_len, X_scaler, y_scaler)
     print(f"\nPrediction for the day after {args.to_iso} is {next_day_pred:.4f}")
     print(f"Best sequence len is {seq_len}")
 
