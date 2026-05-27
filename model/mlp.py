@@ -4,10 +4,11 @@ import sys
 sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 import warnings
 import numpy as np
-from sklearn.neural_network import MLPRegressor
+from sklearn.base import TransformerMixin
 from sklearn.experimental import enable_halving_search_cv
 from sklearn.exceptions import ConvergenceWarning
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
+from sklearn.neural_network import MLPRegressor
 from sklearn.model_selection import HalvingRandomSearchCV
 from sklearn.metrics import root_mean_squared_error, mean_absolute_error, median_absolute_error, mean_absolute_percentage_error
 
@@ -60,7 +61,7 @@ def outer_seq_len_search(init_mlp_reg: MLPRegressor, val_metric: str, ts_seq: np
 
 
 def fit_mlp_uni_reg(mlp_reg: MLPRegressor, ts_seq: np.ndarray, seq_len: int, norm_type: NormType=NormType.NoNorm
-                    ) -> Tuple[MLPRegressor, object]:
+                    ) -> Tuple[MLPRegressor, TransformerMixin]:
     """Fit the best trained model on all data for future predictions"""
     X, y = split_sequence(ts_seq, seq_len)
     X, y, scaler = normalize_sequence_uni(X, y, norm_type)
@@ -68,7 +69,7 @@ def fit_mlp_uni_reg(mlp_reg: MLPRegressor, ts_seq: np.ndarray, seq_len: int, nor
     return mlp_reg, scaler
 
 
-def predict_uni_next_price(mlp_reg: MLPRegressor, ts_seq: np.ndarray, seq_len: int, scaler_object: object) -> float:
+def predict_uni_next_price(mlp_reg: MLPRegressor, ts_seq: np.ndarray, seq_len: int, scaler_object: TransformerMixin) -> float:
     """Predict next price with fit model and its sequence len"""
     if len(ts_seq) < seq_len:
         raise ValueError(f"Need a sequence with len >={seq_len} for prediction")

@@ -1,12 +1,10 @@
 from typing import Tuple
 import os
 import sys
-
-from matplotlib.colors import NoNorm
-
 sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 from enum import Enum
 import numpy as np
+from sklearn.base import TransformerMixin
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import train_test_split
 
@@ -35,7 +33,7 @@ def split_sequence(sequence: list | np.ndarray, n_steps: int=TS_MAX_SEQUENCE_LEN
 # TODO: random train_test_split is kinda trash for time-series, use appropriate strategy
 def split_seq_xy_pipe(flat_sequence: np.ndarray, sequence_len: int=TS_MAX_SEQUENCE_LEN, test_size: float=TEST_SIZE,
                       norm_type: NormType=NormType.NoNorm, random_state: int=RANDOM_STATE
-                      ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, object]:
+                      ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, TransformerMixin]:
 
     X, y = split_sequence(flat_sequence, sequence_len)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
@@ -52,7 +50,7 @@ def get_candles_seq_uni(from_utc: str, to_utc: str, instrument_id: str, interval
 
 
 def normalize_sequence_uni(X: np.ndarray, y: np.ndarray, norm_type: NormType=NormType.NoNorm
-                           ) -> Tuple[np.ndarray, np.ndarray, object]:
+                           ) -> Tuple[np.ndarray, np.ndarray, TransformerMixin]:
 
     scaler = None
     if norm_type != NormType.NoNorm:
@@ -69,7 +67,8 @@ def normalize_sequence_uni(X: np.ndarray, y: np.ndarray, norm_type: NormType=Nor
 
 
 def normalize_splits_uni(X_train: np.ndarray, X_test: np.ndarray, y_train: np.ndarray, y_test: np.ndarray,
-                         norm_type: NormType=NormType.NoNorm) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, object]:
+                         norm_type: NormType=NormType.NoNorm
+                         ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, TransformerMixin]:
 
     # TODO: maybe it's a good idea to scale (not norm) targets
     # https://datascience.stackexchange.com/questions/35603/it-is-helpful-to-normalize-target-variables-for-a-regression-neural-network
