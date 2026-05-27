@@ -22,7 +22,7 @@ def main():
     args = parser.parse_args()
     from_iso = convert_datetime_api_format(datetime.fromisoformat(args.from_iso))
     to_iso = convert_datetime_api_format(datetime.fromisoformat(args.to_iso))
-    norm_type = NormType.MinMax
+    norm_type = NormType.Standardize
 
     search_params_distr = {"loss": ["squared_error"],
                            "learning_rate": ["constant", "adaptive"],
@@ -37,7 +37,8 @@ def main():
     ts_sequence = get_candles_seq_uni(from_iso, to_iso, YDEX_TICKER, to_cache=True)
     print(ts_sequence.shape)
     mlp_reg, seq_len = outer_seq_len_search(init_mlp_uni_reg(), "Root Mean Squared Error", ts_sequence, norm_type=norm_type,
-                                            test_size=local_test_size, param_distr=search_params_distr, verbose=1, random_state=RANDOM_STATE)
+                                            test_size=local_test_size, min_len=7, param_distr=search_params_distr,
+                                            verbose=1, random_state=RANDOM_STATE)
 
     # full data fit, metrics, predict
     mlp_reg, scaler = fit_mlp_uni_reg(mlp_reg, ts_sequence, seq_len, norm_type)

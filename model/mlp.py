@@ -48,7 +48,7 @@ def outer_seq_len_search(init_mlp_reg: MLPRegressor, val_metric: str, ts_seq: np
     for seq_len in range(min_len, max_len + 1):
         X_train, X_test, y_train, y_test, _ = split_seq_xy_pipe(ts_seq, seq_len, test_size, norm_type, random_state)
         trained_mlp_reg = train_mlp_uni_reg(init_mlp_reg, X_train, y_train, param_distr, cv, verbose, random_state)
-        target_error_metric = calc_metrics_mlp_uni_reg(trained_mlp_reg, X_test, y_test)[val_metric]["test"]
+        target_error_metric = calc_metrics_mlp_uni_reg(trained_mlp_reg, X_test, y_test)[val_metric]
 
         if target_error_metric < best_val_error:
             best_val_error = target_error_metric
@@ -83,35 +83,20 @@ def predict_uni_next_price(mlp_reg: MLPRegressor, ts_seq: np.ndarray, seq_len: i
     return pred
 
 
-def log_metrics(metrics: Dict[str, Dict[str, float]]):
-    """ metrics: {'m1': {'train': float, 'test': float}, 'm2': {...} } """
-    for metric, splits in metrics.items():
-        print(f"{metric}:")
-        for split, val in splits.items():
-            print(f"  - {split}: {val:.6f}")
+def log_metrics(metrics: Dict[str, float], split: str="train"):
+    for metric, value in metrics.items():
+        print(f"{metric}: {split} {value:.6f}")
 
 
-# TODO: remove the difference between train and test please
-def calc_metrics_mlp_uni_reg(mlp_reg: MLPRegressor, X_test: np.ndarray, y_test: np.ndarray,
-                             X_train: np.ndarray=None, y_train: np.ndarray=None) -> Dict[str, Dict[str, float]]:
+def calc_metrics_mlp_uni_reg(mlp_reg: MLPRegressor, X: np.ndarray, y: np.ndarray) -> Dict[str, float]:
 
     metrics = {}
-    preds_train = None
-    preds_test = mlp_reg.predict(X_test)
-    if X_train is not None and y_train is not None:
-        preds_train = mlp_reg.predict(X_train)
+    preds = mlp_reg.predict(X)
 
-    metrics["R2 Score"] = {"test": mlp_reg.score(X_test, y_test)}
-    metrics["Root Mean Squared Error"] = {"test": root_mean_squared_error(y_test, preds_test)}
-    metrics["Mean Absolute Error"] = {"test": mean_absolute_error(y_test, preds_test)}
-    metrics["Mean Absolute Percentage Error"] = {"test": mean_absolute_percentage_error(y_test, preds_test)}
-    metrics["Median Absolute Error"] = {"test": median_absolute_error(y_test, preds_test)}
-
-    if preds_train is not None:
-        metrics["R2 Score"]["train"] = mlp_reg.score(X_train, y_train)
-        metrics["Root Mean Squared Error"]["train"] = root_mean_squared_error(y_train, preds_train)
-        metrics["Mean Absolute Error"]["train"] = mean_absolute_error(y_train, preds_train)
-        metrics["Mean Absolute Percentage Error"]["train"] = mean_absolute_percentage_error(y_train, preds_train)
-        metrics["Median Absolute Error"]["train"] = median_absolute_error(y_train, preds_train)
+    metrics["R2 Score"] = mlp_reg.score(X, y)
+    metrics["Root Mean Squared Error"] = root_mean_squared_error(y, preds)
+    metrics["Mean Absolute Error"] = mean_absolute_error(y, preds)
+    metrics["Mean Absolute Percentage Error"] = mean_absolute_percentage_error(y, preds)
+    metrics["Median Absolute Error"] = median_absolute_error(y, preds)
 
     return metrics
