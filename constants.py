@@ -11,7 +11,7 @@ ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 # models
 CANDLES_MULTI_FEATURES = ["open", "close", "high", "low"]
 CANDLES_UNI_FEATURE = ["close"]
-MAX_ITER = 1000
+MAX_ITER = 2000
 TS_MAX_SEQUENCE_LEN = 10
 TS_MIN_SEQUENCE_LEN = 3
 TEST_SIZE = 0.33
