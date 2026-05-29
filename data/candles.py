@@ -12,7 +12,6 @@ from constants import REST_API_DOMAIN, READ_ONLY_TOKEN, GET_CANDLES_REST, YDEX_T
 
 def get_candles_df(candles_data: dict, select_features: list=None) -> pd.DataFrame:
     """parsing json data to pandas dataframe for training"""
-
     candles_data_for_df = defaultdict(list)
     for candle in candles_data["candles"]:
         candles_data_for_df["open"].append(float(f"{candle['open']['units']}.{candle['open']['nano']}"))
@@ -80,6 +79,9 @@ def get_candles_data(from_utc: str, to_utc: str, instrument_id: str, interval: s
     connection.request("POST", GET_CANDLES_REST, payload, headers)
     response = connection.getresponse()
     candles_data_dict = json.loads(response.read().decode("utf-8"))
+
+    if "candles" not in candles_data_dict:
+        raise ValueError("Unknown instrument")
 
     if to_cache and not os.path.exists(save_data_fpath):
         with open(save_data_fpath, 'w', encoding="utf-8") as f:

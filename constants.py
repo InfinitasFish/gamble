@@ -9,8 +9,8 @@ READ_ONLY_TOKEN = os.environ["READ_ONLY_TOKEN"]
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 
 # models
-CANDLES_MULTI_FEATURES = ["open", "close", "high", "low"]
-CANDLES_UNI_FEATURE = ["close"]
+CANDLES_MULTI_TARGET_FEATURES = ["open", "close", "high", "low"]
+CANDLES_UNI_TARGET_FEATURE = ["close"]
 MAX_ITER = 2000
 TS_MAX_SEQUENCE_LEN = 10
 TS_MIN_SEQUENCE_LEN = 5
@@ -27,7 +27,10 @@ GET_CANDLES_REST = "/rest/tinkoff.public.invest.api.contract.v1.MarketDataServic
 # actives idxs
 YDEX_ISIN = "RU000A107T19"
 YDEX_TICKER = "YDEX_TQBR"
-# TODO: add other tickers pls
+X5_TICKER = "X5_TQBR"
+VTBR_TICKER = "VTBR_TQBR"
+T_TICKER = "T_TQBR"
+SBER_TICKER = "SBER_TQBR"
 
 # cache
 CACHE_DIR_FPATH = os.path.join(ROOT_DIR, "cache")

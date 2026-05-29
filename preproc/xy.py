@@ -8,7 +8,7 @@ from sklearn.base import TransformerMixin
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import train_test_split
 
-from constants import TS_MAX_SEQUENCE_LEN, CACHE_DIR_FPATH, CANDLES_UNI_FEATURE, TEST_SIZE, RANDOM_STATE
+from constants import TS_MAX_SEQUENCE_LEN, CACHE_DIR_FPATH, CANDLES_UNI_TARGET_FEATURE, TEST_SIZE, RANDOM_STATE
 from data.candles import get_candles_data, get_candles_df
 
 
@@ -41,10 +41,11 @@ def split_seq_xy_pipe(flat_sequence: np.ndarray, sequence_len: int=TS_MAX_SEQUEN
     return X_train, X_test, y_train, y_test, X_scaler, y_scaler
 
 
+# TODO: add more features for training brotherman, just "close" price isn't enough
 def get_candles_seq_uni(from_utc: str, to_utc: str, instrument_id: str, interval: str="CANDLE_INTERVAL_DAY",
                         cache_fpath: str=CACHE_DIR_FPATH, to_cache: bool=False) -> np.ndarray:
     candles_data = get_candles_data(from_utc, to_utc, instrument_id, interval, cache_fpath, to_cache)
-    candles_df = get_candles_df(candles_data, CANDLES_UNI_FEATURE)
+    candles_df = get_candles_df(candles_data, CANDLES_UNI_TARGET_FEATURE)
     sequence = candles_df.to_numpy().flatten().reshape(-1, 1)
     return sequence
 

@@ -6,8 +6,9 @@ import warnings
 import numpy as np
 from sklearn.base import TransformerMixin
 from sklearn.experimental import enable_halving_search_cv
-from sklearn.exceptions import ConvergenceWarning
-warnings.filterwarnings("ignore", category=ConvergenceWarning)
+# after scaling targets model converges without warning
+#from sklearn.exceptions import ConvergenceWarning
+#warnings.filterwarnings("ignore", category=ConvergenceWarning)
 from sklearn.neural_network import MLPRegressor
 from sklearn.model_selection import HalvingRandomSearchCV
 from sklearn.metrics import root_mean_squared_error, mean_absolute_error, median_absolute_error, mean_absolute_percentage_error
@@ -90,6 +91,7 @@ def predict_uni_next_price(mlp_reg: MLPRegressor, ts_seq: np.ndarray, seq_len: i
 
 
 def log_metrics(metrics: Dict[str, float], split: str="train"):
+    print()
     for metric, value in metrics.items():
         print(f"{metric}: {split} {value:.6f}")
 
