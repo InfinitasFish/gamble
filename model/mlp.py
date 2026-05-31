@@ -6,14 +6,14 @@ import warnings
 import numpy as np
 from sklearn.base import TransformerMixin
 from sklearn.experimental import enable_halving_search_cv
-# after scaling targets model converges without warning
-#from sklearn.exceptions import ConvergenceWarning
-#warnings.filterwarnings("ignore", category=ConvergenceWarning)
+# after scaling targets model converges without warnings
+from sklearn.exceptions import ConvergenceWarning
+warnings.filterwarnings("ignore", category=ConvergenceWarning)
 from sklearn.neural_network import MLPRegressor
-from sklearn.model_selection import HalvingRandomSearchCV
+from sklearn.model_selection import HalvingRandomSearchCV, TimeSeriesSplit
 from sklearn.metrics import root_mean_squared_error, mean_absolute_error, median_absolute_error, mean_absolute_percentage_error
 
-from preproc.xy import split_sequence, split_seq_xy_pipe, normalize_sequence_uni, NormType
+from preproc.xy import split_sequence, split_temporal_seq_xy_pipe, normalize_sequence_uni, NormType
 from constants import RANDOM_STATE, MAX_ITER, CV_FOLDS, TS_MIN_SEQUENCE_LEN, TS_MAX_SEQUENCE_LEN, TEST_SIZE
 
 
@@ -29,11 +29,14 @@ def train_mlp_uni_reg(mlp_reg: MLPRegressor, X_train: np.ndarray, y_train: np.nd
         mlp_reg.fit(X_train, y_train)
         return mlp_reg
     else:
+        ts_cv = TimeSeriesSplit(n_splits=cv,)
+
         # HalvingRandomSearchCV iteratively increases the resource (data n_samples by default) to fit with CV
         #   while also decreases the amount of candidates at each step
         # with 'refit' returns instance of model fitted with best params
+        cv_splitter = TimeSeriesSplit(n_splits=cv, max_train_size=X_train.shape[1])
         search = HalvingRandomSearchCV(mlp_reg, param_distributions=param_distr, n_candidates="exhaust", factor=1.5, refit=True,
-                                       scoring="neg_root_mean_squared_error", cv=cv, random_state=random_state, n_jobs=2, verbose=verbose,
+                                       scoring="neg_root_mean_squared_error", cv=ts_cv, random_state=random_state, n_jobs=2, verbose=verbose,
                                        ).fit(X_train, y_train)
         return search.best_estimator_
 
@@ -48,7 +51,7 @@ def outer_seq_len_search(init_mlp_reg: MLPRegressor, val_metric: str, ts_seq: np
     best_mlp_reg = None
     best_seq_len = -1
     for seq_len in range(min_len, max_len + 1):
-        X_train, X_test, y_train, y_test, _, _ = split_seq_xy_pipe(ts_seq, seq_len, test_size, norm_type, scale_y, random_state)
+        X_train, X_test, y_train, y_test, _, _ = split_temporal_seq_xy_pipe(ts_seq, seq_len, test_size, norm_type, scale_y)
         trained_mlp_reg = train_mlp_uni_reg(init_mlp_reg, X_train, y_train, param_distr, cv, verbose, random_state)
         target_error_metric = calc_metrics_mlp_uni_reg(trained_mlp_reg, X_test, y_test)[val_metric]
 

@@ -9,7 +9,7 @@ from constants import YDEX_TICKER, TS_MAX_SEQUENCE_LEN, RANDOM_STATE
 from data.candles import convert_datetime_api_format
 from model.mlp import (init_mlp_uni_reg, outer_seq_len_search, fit_mlp_uni_reg, predict_uni_next_price,
                        calc_metrics_mlp_uni_reg, log_metrics)
-from preproc.xy import get_candles_seq_uni, split_sequence, split_seq_xy_pipe, normalize_sequence_uni, NormType
+from preproc.xy import get_candles_seq_uni, split_sequence, split_temporal_seq_xy_pipe, normalize_sequence_uni, NormType
 
 
 parser = argparse.ArgumentParser()
@@ -52,9 +52,8 @@ def main():
                                             scale_y=scale_y, verbose=1, random_state=RANDOM_STATE)
 
     # final test metrics on splits
-    X_train, X_test, y_train, y_test, X_scaler, y_scaler = split_seq_xy_pipe(ts_sequence, seq_len, norm_type=norm_type,
-                                                                             scale_y=scale_y, test_size=local_test_size,
-                                                                             random_state=RANDOM_STATE)
+    X_train, X_test, y_train, y_test, X_scaler, y_scaler = split_temporal_seq_xy_pipe(ts_sequence, seq_len, norm_type=norm_type,
+                                                                             scale_y=scale_y, test_size=local_test_size)
     metrics = calc_metrics_mlp_uni_reg(mlp_reg, X_test, y_test, y_scaler)
     log_metrics(metrics, "test")
 

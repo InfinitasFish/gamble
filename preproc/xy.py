@@ -30,7 +30,6 @@ def split_sequence(sequence: list | np.ndarray, n_steps: int=TS_MAX_SEQUENCE_LEN
     return X, y
 
 
-# TODO: random train_test_split is kinda trash for time-series, use appropriate strategy
 def split_seq_xy_pipe(flat_sequence: np.ndarray, sequence_len: int=TS_MAX_SEQUENCE_LEN, test_size: float=TEST_SIZE,
                       norm_type: NormType=NormType.NoNorm, scale_y: bool=True, random_state: int=RANDOM_STATE
                       ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, TransformerMixin, TransformerMixin]:
@@ -39,6 +38,26 @@ def split_seq_xy_pipe(flat_sequence: np.ndarray, sequence_len: int=TS_MAX_SEQUEN
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
     X_train, X_test, y_train, y_test, X_scaler, y_scaler = normalize_splits_uni(X_train, X_test, y_train, y_test, norm_type, scale_y)
     return X_train, X_test, y_train, y_test, X_scaler, y_scaler
+
+
+def split_temporal_seq_xy_pipe(flat_sequence: np.ndarray, sequence_len: int=TS_MAX_SEQUENCE_LEN, test_size: float=TEST_SIZE,
+                               norm_type: NormType=NormType.NoNorm, scale_y: bool=True,
+                               ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, TransformerMixin, TransformerMixin]:
+
+    X, y = split_sequence(flat_sequence, sequence_len)
+    X_train, X_test, y_train, y_test = train_test_split_temporal(X, y, test_size=test_size)
+    X_train, X_test, y_train, y_test, X_scaler, y_scaler = normalize_splits_uni(X_train, X_test, y_train, y_test, norm_type, scale_y)
+    return X_train, X_test, y_train, y_test, X_scaler, y_scaler
+
+
+def train_test_split_temporal(X: np.ndarray, y: np.ndarray, test_size: float
+                              ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+
+    assert X.shape[0] == y.shape[0]
+    train_idx_border = int(X.shape[0] * (1 - test_size))
+    X_train, y_train = X[:train_idx_border], y[:train_idx_border]
+    X_test, y_test = X[train_idx_border:], y[train_idx_border:]
+    return X_train, X_test, y_train, y_test
 
 
 # TODO: add more features for training brotherman, just "close" price isn't enough
