@@ -7,9 +7,9 @@ from scipy import stats
 
 from constants import YDEX_TICKER, TS_MAX_SEQUENCE_LEN, RANDOM_STATE
 from data.candles import convert_datetime_api_format
-from model.mlp import (init_mlp_uni_reg, outer_seq_len_search, fit_mlp_uni_reg, predict_uni_next_price,
+from model.mlp import (init_mlp_uni_reg, outer_seq_len_search, fit_mlp_uni_reg, predict_next_prices,
                        calc_metrics_mlp_uni_reg, log_metrics)
-from preproc.xy import get_candles_seq_uni, split_sequence, split_temporal_seq_xy_pipe, normalize_sequence_uni, NormType
+from preproc.xy import get_candles_xy, split_sequence, temporal_split_seq_xy_pipe, normalize_sequence_uni, NormType
 
 
 parser = argparse.ArgumentParser()
@@ -43,29 +43,27 @@ def main():
                            # [loc, scale]
                            "max_iter": stats.randint(1000, 4000)}
 
-    # standard normalization doesn't work btw
     local_test_size = 0.05
-    ts_sequence = get_candles_seq_uni(from_iso, to_iso, ticker, to_cache=True)
-    print(ts_sequence.shape)
-    mlp_reg, seq_len = outer_seq_len_search(init_mlp_uni_reg(), "Root Mean Squared Error", ts_sequence, norm_type=norm_type,
+    X, y = get_candles_xy(from_iso, to_iso, ticker, to_cache=True)
+    print(X.shape, y.shape)
+    mlp_reg, seq_len = outer_seq_len_search(init_mlp_uni_reg(), "Root Mean Squared Error", X, y, norm_type=norm_type,
                                             test_size=local_test_size, min_len=7, max_len=max_seq_len, param_distr=search_params_distr,
                                             scale_y=scale_y, verbose=1, random_state=RANDOM_STATE)
 
     # final test metrics on splits
-    X_train, X_test, y_train, y_test, X_scaler, y_scaler = split_temporal_seq_xy_pipe(ts_sequence, seq_len, norm_type=norm_type,
-                                                                             scale_y=scale_y, test_size=local_test_size)
+    X_train, X_test, y_train, y_test, X_scaler, y_scaler = temporal_split_seq_xy_pipe(X, y, norm_type=norm_type,
+                                                                                      scale_y=scale_y, test_size=local_test_size)
     metrics = calc_metrics_mlp_uni_reg(mlp_reg, X_test, y_test, y_scaler)
     log_metrics(metrics, "test")
 
     # full data fit, metrics, predict
-    mlp_reg, X_scaler, y_scaler = fit_mlp_uni_reg(mlp_reg, ts_sequence, seq_len, norm_type, scale_y)
-    X, y = split_sequence(ts_sequence, seq_len)
+    mlp_reg, X_scaler, y_scaler = fit_mlp_uni_reg(mlp_reg, X, y, norm_type, scale_y)
     X, y, _, _ = normalize_sequence_uni(X, y, norm_type, scale_y)
     metrics = calc_metrics_mlp_uni_reg(mlp_reg, X, y, y_scaler)
     log_metrics(metrics, "full")
 
-    next_day_pred = predict_uni_next_price(mlp_reg, ts_sequence, seq_len, X_scaler, y_scaler)
-    print(f"\nPrediction for the day after {args.to_iso} is {next_day_pred:.4f}")
+    next_day_pred = predict_next_prices(mlp_reg, X, seq_len, y_scaler)[-1]
+    print(f"\nPredictions for the day after {args.to_iso} is {next_day_pred}")
     print(f"Best sequence len is {seq_len}")
 
 

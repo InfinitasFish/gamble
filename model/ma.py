@@ -99,12 +99,14 @@ def plot_ma_for_timeseries(ts_data: np.ndarray | pd.Series, window: int=TS_MIN_S
 if __name__ == "__main__":
     from datetime import datetime
     from data.candles import convert_datetime_api_format
-    from preproc.xy import get_candles_seq_uni
-    from constants import YDEX_TICKER
+    from preproc.xy import get_candles_xy
+    from constants import YDEX_TICKER, CANDLES_UNI_TARGET_FEATURE
 
     from_iso = convert_datetime_api_format(datetime.fromisoformat("2024-01-01"))
     to_iso = convert_datetime_api_format(datetime.fromisoformat("2026-01-01"))
-    ts_data = get_candles_seq_uni(from_iso, to_iso, YDEX_TICKER, to_cache=True).reshape(-1)
-    plot_ma_for_timeseries(ts_data, window=10, ma_type=MAType.ExponentMA)
-    plot_ma_for_timeseries(ts_data, window=20, ma_type=MAType.ExponentMA)
-    plot_ma_for_timeseries(ts_data, window=50, ma_type=MAType.ExponentMA)
+    X, y = get_candles_xy(from_iso, to_iso, YDEX_TICKER, target_features=CANDLES_UNI_TARGET_FEATURE, to_cache=True)
+    y = y.reshape(-1)
+
+    plot_ma_for_timeseries(y, window=10, ma_type=MAType.ExponentMA)
+    plot_ma_for_timeseries(y, window=20, ma_type=MAType.ExponentMA)
+    plot_ma_for_timeseries(y, window=50, ma_type=MAType.ExponentMA)

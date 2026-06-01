@@ -9,7 +9,8 @@ READ_ONLY_TOKEN = os.environ["READ_ONLY_TOKEN"]
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 
 # models
-CANDLES_MULTI_FEATURES = ["open", "close", "high", "low"]
+CANDLES_MULTI_TRAINING_FEATURES = ["open", "close", "high", "low"]
+CANDLES_MULTI_TARGET_FEATURES = ["open", "close", "high", "low"]
 CANDLES_UNI_TARGET_FEATURE = ["close"]
 MAX_ITER = 2000
 TS_MAX_SEQUENCE_LEN = 10

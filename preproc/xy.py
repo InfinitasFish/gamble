@@ -8,7 +8,7 @@ from sklearn.base import TransformerMixin
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import train_test_split
 
-from constants import TS_MAX_SEQUENCE_LEN, CACHE_DIR_FPATH, CANDLES_UNI_TARGET_FEATURE, TEST_SIZE, RANDOM_STATE
+from constants import TS_MAX_SEQUENCE_LEN, CACHE_DIR_FPATH, CANDLES_MULTI_TRAINING_FEATURES, CANDLES_UNI_TARGET_FEATURE, TEST_SIZE, RANDOM_STATE
 from data.candles import get_candles_data, get_candles_df
 
 
@@ -30,21 +30,19 @@ def split_sequence(sequence: list | np.ndarray, n_steps: int=TS_MAX_SEQUENCE_LEN
     return X, y
 
 
-def split_seq_xy_pipe(flat_sequence: np.ndarray, sequence_len: int=TS_MAX_SEQUENCE_LEN, test_size: float=TEST_SIZE,
-                      norm_type: NormType=NormType.NoNorm, scale_y: bool=True, random_state: int=RANDOM_STATE
-                      ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, TransformerMixin, TransformerMixin]:
+def random_split_seq_xy_pipe(X: np.ndarray, y: np.ndarray, test_size: float=TEST_SIZE,
+                             norm_type: NormType=NormType.NoNorm, scale_y: bool=True, random_state: int=RANDOM_STATE
+                             ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, TransformerMixin, TransformerMixin]:
 
-    X, y = split_sequence(flat_sequence, sequence_len)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
     X_train, X_test, y_train, y_test, X_scaler, y_scaler = normalize_splits_uni(X_train, X_test, y_train, y_test, norm_type, scale_y)
     return X_train, X_test, y_train, y_test, X_scaler, y_scaler
 
 
-def split_temporal_seq_xy_pipe(flat_sequence: np.ndarray, sequence_len: int=TS_MAX_SEQUENCE_LEN, test_size: float=TEST_SIZE,
+def temporal_split_seq_xy_pipe(X: np.ndarray, y: np.ndarray, test_size: float=TEST_SIZE,
                                norm_type: NormType=NormType.NoNorm, scale_y: bool=True,
                                ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, TransformerMixin, TransformerMixin]:
 
-    X, y = split_sequence(flat_sequence, sequence_len)
     X_train, X_test, y_train, y_test = train_test_split_temporal(X, y, test_size=test_size)
     X_train, X_test, y_train, y_test, X_scaler, y_scaler = normalize_splits_uni(X_train, X_test, y_train, y_test, norm_type, scale_y)
     return X_train, X_test, y_train, y_test, X_scaler, y_scaler
@@ -60,13 +58,22 @@ def train_test_split_temporal(X: np.ndarray, y: np.ndarray, test_size: float
     return X_train, X_test, y_train, y_test
 
 
-# TODO: add more features for training brotherman, just "close" price isn't enough
-def get_candles_seq_uni(from_utc: str, to_utc: str, instrument_id: str, interval: str="CANDLE_INTERVAL_DAY",
-                        cache_fpath: str=CACHE_DIR_FPATH, to_cache: bool=False) -> np.ndarray:
+def get_candles_xy(from_utc: str, to_utc: str, instrument_id: str, interval: str= "CANDLE_INTERVAL_DAY",
+                   train_features: list=CANDLES_MULTI_TRAINING_FEATURES, target_features: list=CANDLES_UNI_TARGET_FEATURE,
+                   cache_fpath: str=CACHE_DIR_FPATH, to_cache: bool=False) -> Tuple[np.ndarray, np.ndarray]:
+
     candles_data = get_candles_data(from_utc, to_utc, instrument_id, interval, cache_fpath, to_cache)
-    candles_df = get_candles_df(candles_data, CANDLES_UNI_TARGET_FEATURE)
-    sequence = candles_df.to_numpy().flatten().reshape(-1, 1)
-    return sequence
+    candles_df = get_candles_df(candles_data, train_features)
+
+    target_features_df = []
+    for feature in target_features:
+        target_features_df.append(f"target_{feature}")
+        candles_df[f"target_{feature}"] = candles_df[feature].shift(1)
+    candles_df = candles_df.dropna()
+
+    X = candles_df[train_features].to_numpy()
+    y = candles_df[target_features_df].to_numpy()
+    return X, y
 
 
 def normalize_sequence_uni(X: np.ndarray, y: np.ndarray, norm_type: NormType=NormType.NoNorm, scale_y: bool=True,
@@ -87,7 +94,7 @@ def normalize_sequence_uni(X: np.ndarray, y: np.ndarray, norm_type: NormType=Nor
         X = X_scaler.fit_transform(X)
 
         if scale_y:
-            y = y_scaler.fit_transform(y.reshape(-1, 1)).reshape(-1)
+            y = y_scaler.fit_transform(y)
 
     return X, y, X_scaler, y_scaler
 
@@ -112,7 +119,8 @@ def normalize_splits_uni(X_train: np.ndarray, X_test: np.ndarray, y_train: np.nd
         X_test = X_scaler.transform(X_test)
 
         if scale_y:
-            y_train = y_scaler.fit_transform(y_train.reshape(-1, 1)).reshape(-1)
-            y_test = y_scaler.transform(y_test.reshape(-1, 1)).reshape(-1)
+            y_train = y_scaler.fit_transform(y_train)
+            y_test = y_scaler.transform(y_test)
 
     return X_train, X_test, y_train, y_test, X_scaler, y_scaler
+
