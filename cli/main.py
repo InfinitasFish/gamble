@@ -47,7 +47,7 @@ def main():
     X, y = get_candles_xy(from_iso, to_iso, ticker, to_cache=True)
     print(X.shape, y.shape)
     mlp_reg, seq_len = outer_seq_len_search(init_mlp_uni_reg(), "Root Mean Squared Error", X, y, norm_type=norm_type,
-                                            test_size=local_test_size, min_len=7, max_len=max_seq_len, param_distr=search_params_distr,
+                                            test_size=local_test_size, min_len=4, max_len=max_seq_len, param_distr=search_params_distr,
                                             scale_y=scale_y, verbose=1, random_state=RANDOM_STATE)
 
     # final test metrics on splits
@@ -56,6 +56,8 @@ def main():
     metrics = calc_metrics_mlp_uni_reg(mlp_reg, X_test, y_test, y_scaler)
     log_metrics(metrics, "test")
 
+    # TODO: metrics are better now, but R2 score is negative, so data is too noisy, also model tends to use smaller sequence length
+    #    Possible fixes - feature selections, features denoising, e.g. using moving averages of features instead
     # full data fit, metrics, predict
     mlp_reg, X_scaler, y_scaler = fit_mlp_uni_reg(mlp_reg, X, y, norm_type, scale_y)
     X, y, _, _ = normalize_sequence_uni(X, y, norm_type, scale_y)
