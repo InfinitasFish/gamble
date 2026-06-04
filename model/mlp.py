@@ -105,7 +105,7 @@ def log_metrics(metrics: Dict[str, float], split: str="train"):
         print(f"{metric}: {split} {value:.6f}")
 
 
-# TODO: make a metric which calculates how well model predicts the direction of price; calc errors variance
+# TODO: calc errors variance
 def calc_metrics_mlp_uni_reg(mlp_reg: MLPRegressor, X: np.ndarray, y: np.ndarray, y_scaler: TransformerMixin=None) -> Dict[str, float]:
 
     metrics = {}
@@ -124,10 +124,23 @@ def calc_metrics_mlp_uni_reg(mlp_reg: MLPRegressor, X: np.ndarray, y: np.ndarray
     if preds.ndim == 2 and preds.shape[1] == 1:
         preds = preds.reshape(-1)
 
+    # calculates how often pred price moves the same direction as y price
+    # will not work for multivariate predictions
+    price_direction_preds = []
+    for i in range(1, y.shape[0]):
+        pred_direction = preds[i] - preds[i - 1]
+        y_direction = y[i] - y[i - 1]
+        if (pred_direction >= 0 and y_direction >= 0) or (pred_direction <= 0 and y_direction <= 0):
+            price_direction_preds.append(1)
+        else:
+            price_direction_preds.append(0)
+    correct_direction_percent = sum(price_direction_preds) / len(price_direction_preds)
+
     metrics["R2 Score"] = mlp_reg.score(X, y)
     metrics["Root Mean Squared Error"] = root_mean_squared_error(y, preds)
     metrics["Mean Absolute Error"] = mean_absolute_error(y, preds)
     metrics["Mean Absolute Percentage Error"] = mean_absolute_percentage_error(y, preds)
     metrics["Median Absolute Error"] = median_absolute_error(y, preds)
+    metrics["Correct Price Direction Percentage"] = correct_direction_percent
 
     return metrics
