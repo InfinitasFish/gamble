@@ -2,14 +2,12 @@ import argparse
 from datetime import datetime
 import os
 import sys
-
-from numpy.f2py.crackfortran import verbose
-
 sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 from scipy import stats
-
+import numpy as np
 from constants import YDEX_TICKER, TS_MAX_SEQUENCE_LEN, RANDOM_STATE
 from data.candles import convert_datetime_api_format
+from model.ma import get_exponential_moving_average
 from model.mlp import (init_mlp_uni_reg, outer_seq_len_search, fit_mlp_uni_reg, predict_next_prices,
                        calc_metrics_mlp_uni_reg, log_metrics)
 from preproc.xy import get_candles_xy, split_xy_to_sequences, split_seq_xy_pipe, normalize_sequence_uni, NormType
@@ -23,7 +21,7 @@ parser.add_argument("--to_iso", type=str, nargs='?', default="2026-01-01", help=
 parser.add_argument("--max_seq_len", type=int, nargs='?', default=TS_MAX_SEQUENCE_LEN, help="Upper bound for number of candles to train and predict the next value on")
 parser.add_argument("--norm_type", choices=["none", "minmax", "standardize"], nargs='?', default="none", help="Type of data normalization for training a model")
 parser.add_argument("--scale_y", action=argparse.BooleanOptionalAction, help="Enable target normalization for training a model")
-parser.add_argument("--verbose", type=int, nargs='?', default=0, help="Set verbosity for training a model")
+parser.add_argument("--verbose", type=int, nargs='?', default=1, help="Set verbosity for training a model")
 
 
 def main():
@@ -51,6 +49,13 @@ def main():
 
     local_test_size = 0.05
     X, y = get_candles_xy(from_iso, to_iso, ticker, to_cache=True)
+
+    # denoise data by applying moving average
+    for i in range(X.shape[1]):
+        xi_ma = get_exponential_moving_average(X[:, i])
+        X[:, i] = np.array(xi_ma)
+
+    y[:, 0] = get_exponential_moving_average(y[:, 0])
     print(X.shape, y.shape)
     mlp_reg, seq_len = outer_seq_len_search(init_mlp_uni_reg(), "Root Mean Squared Error", X, y, norm_type=norm_type, temporal=temporal,
                                             test_size=local_test_size, min_len=1, max_len=max_seq_len, param_distr=search_params_distr,

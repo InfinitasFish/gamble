@@ -75,8 +75,8 @@ def get_candles_xy(from_utc: str, to_utc: str, instrument_id: str, interval: str
         candles_df[f"target_{feature}"] = candles_df[feature].shift(-1)
     candles_df = candles_df.dropna()
 
-    X = candles_df[train_features].to_numpy()
-    y = candles_df[target_features_df].to_numpy()
+    X = np.array(candles_df[train_features])
+    y = np.array(candles_df[target_features_df])
     return X, y
 
 
