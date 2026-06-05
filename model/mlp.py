@@ -13,7 +13,7 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.model_selection import HalvingRandomSearchCV, TimeSeriesSplit
 from sklearn.metrics import root_mean_squared_error, mean_absolute_error, median_absolute_error, mean_absolute_percentage_error
 
-from preproc.xy import split_sequence, temporal_split_seq_xy_pipe, normalize_sequence_uni, NormType
+from preproc.xy import split_xy_to_sequences, split_seq_xy_pipe, normalize_sequence_uni, NormType
 from constants import RANDOM_STATE, MAX_ITER, CV_FOLDS, TS_MIN_SEQUENCE_LEN, TS_MAX_SEQUENCE_LEN, TEST_SIZE
 
 # TODO: there are specific mlp for timeseries, consider implementing, e.g. https://arxiv.org/pdf/2311.06184
@@ -46,8 +46,8 @@ def train_mlp_uni_reg(mlp_reg: MLPRegressor, X_train: np.ndarray, y_train: np.nd
 
 
 def outer_seq_len_search(init_mlp_reg: MLPRegressor, val_metric: str, X: np.ndarray, y: np.ndarray, norm_type: NormType=NormType.NoNorm,
-                         test_size: float=TEST_SIZE, min_len: int=TS_MIN_SEQUENCE_LEN, max_len: int=TS_MAX_SEQUENCE_LEN,
-                         scale_y: bool=True, param_distr: dict=None, cv: int=CV_FOLDS, verbose: int=0, random_state: int=RANDOM_STATE
+                         temporal: bool=True, test_size: float=TEST_SIZE, min_len: int=TS_MIN_SEQUENCE_LEN, max_len: int=TS_MAX_SEQUENCE_LEN,
+                         scale_y: bool=True, param_distr: dict=None, cv: int=CV_FOLDS, verbose: int=1, random_state: int=RANDOM_STATE
                          ) -> Tuple[MLPRegressor, int]:
     """Training multiple MLP to find best sequence length for prediction"""
 
@@ -55,7 +55,7 @@ def outer_seq_len_search(init_mlp_reg: MLPRegressor, val_metric: str, X: np.ndar
     best_mlp_reg = None
     best_seq_len = -1
     for seq_len in range(min_len, max_len + 1):
-        X_train, X_test, y_train, y_test, X_scaler, y_scaler = temporal_split_seq_xy_pipe(X, y, test_size, norm_type, scale_y)
+        X_train, X_test, y_train, y_test, X_scaler, y_scaler = split_seq_xy_pipe(X, y, seq_len, temporal, test_size, norm_type, scale_y)
         trained_mlp_reg = train_mlp_uni_reg(init_mlp_reg, X_train, y_train, param_distr, cv, verbose, random_state)
         target_error_metric = calc_metrics_mlp_uni_reg(trained_mlp_reg, X_test, y_test, y_scaler)[val_metric]
 
@@ -68,13 +68,13 @@ def outer_seq_len_search(init_mlp_reg: MLPRegressor, val_metric: str, X: np.ndar
     return best_mlp_reg, best_seq_len
 
 
-def fit_mlp_uni_reg(mlp_reg: MLPRegressor, X: np.ndarray, y: np.ndarray, norm_type: NormType=NormType.NoNorm,
+def fit_mlp_uni_reg(mlp_reg: MLPRegressor, X: np.ndarray, y: np.ndarray, seq_len: int, norm_type: NormType=NormType.NoNorm,
                     scale_y: bool=True) -> Tuple[MLPRegressor, TransformerMixin, TransformerMixin]:
     """Fit the best trained model on all data for future predictions"""
-    X, y, X_scaler, y_scaler = normalize_sequence_uni(X, y, norm_type, scale_y)
 
-    if y.ndim == 2 and y.shape[1] == 1:
-        y = y.reshape(-1)
+    # bad code kinda
+    X, y, X_scaler, y_scaler = normalize_sequence_uni(X, y, norm_type, scale_y)
+    X, y = split_xy_to_sequences(X, y, seq_len)
 
     mlp_reg.fit(X, y)
     return mlp_reg, X_scaler, y_scaler
