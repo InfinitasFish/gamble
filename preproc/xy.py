@@ -8,6 +8,7 @@ from sklearn.base import TransformerMixin
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import train_test_split
 
+from model.ma import get_exponential_moving_average
 from constants import TS_MAX_SEQUENCE_LEN, CACHE_DIR_FPATH, CANDLES_MULTI_TRAINING_FEATURES, CANDLES_UNI_TARGET_FEATURE, TEST_SIZE, RANDOM_STATE
 from data.candles import get_candles_data, get_candles_df
 
@@ -27,10 +28,19 @@ def split_xy_to_sequences(X: np.ndarray, y: np.ndarray, n_steps: int=TS_MAX_SEQU
         X_seqs.append(X[i:(i + n_steps)])
         y_for_seqs.append(y[i + n_steps - 1])
 
-    # have to reshape
+    # have to reshape, because mlp and scaler accept [ndim <= 2]
     X_seqs = np.squeeze(np.array(X_seqs)).reshape(len(X_seqs), -1)
     y_for_seqs = np.squeeze(np.array(y_for_seqs))
     return X_seqs, y_for_seqs
+
+
+def denoise_xy_features_wma(X, y, window: int):
+    for i in range(X.shape[1]):
+        xi_ma = get_exponential_moving_average(X[:, i], window)
+        X[:, i] = np.array(xi_ma)
+
+    y[:, 0] = get_exponential_moving_average(y[:, 0], window)
+    return X, y
 
 
 def split_seq_xy_pipe(X: np.ndarray, y: np.ndarray, seq_len: int, temporal: bool=True, test_size: float=TEST_SIZE,

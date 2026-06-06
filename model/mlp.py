@@ -72,11 +72,11 @@ def fit_mlp_uni_reg(mlp_reg: MLPRegressor, X: np.ndarray, y: np.ndarray, seq_len
                     scale_y: bool=True) -> Tuple[MLPRegressor, TransformerMixin, TransformerMixin]:
     """Fit the best trained model on all data for future predictions"""
 
-    # bad code kinda
     X, y, X_scaler, y_scaler = normalize_sequence_uni(X, y, norm_type, scale_y)
     X, y = split_xy_to_sequences(X, y, seq_len)
 
     mlp_reg.fit(X, y)
+
     return mlp_reg, X_scaler, y_scaler
 
 
@@ -105,7 +105,7 @@ def log_metrics(metrics: Dict[str, float], split: str="train"):
         print(f"{metric}: {split} {value:.6f}")
 
 
-# TODO: calc errors variance
+# TODO: calc errors variance, average daily return of a mlp
 def calc_metrics_mlp_uni_reg(mlp_reg: MLPRegressor, X: np.ndarray, y: np.ndarray, y_scaler: TransformerMixin=None) -> Dict[str, float]:
 
     metrics = {}
