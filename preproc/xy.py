@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Optional
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
@@ -9,7 +9,8 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import train_test_split
 
 from model.ma import get_exponential_moving_average
-from constants import TS_MAX_SEQUENCE_LEN, CACHE_DIR_FPATH, CANDLES_MULTI_TRAINING_FEATURES, CANDLES_UNI_TARGET_FEATURE, TEST_SIZE, RANDOM_STATE
+from constants import TS_MAX_SEQUENCE_LEN, CACHE_DIR_FPATH, CANDLES_MULTI_TRAINING_FEATURES, CANDLES_UNI_TARGET_FEATURE, \
+    TEST_SIZE, RANDOM_STATE, TS_MIN_SEQUENCE_LEN
 from data.candles import get_candles_data, get_candles_df
 
 
@@ -34,13 +35,19 @@ def split_xy_to_sequences(X: np.ndarray, y: np.ndarray, n_steps: int=TS_MAX_SEQU
     return X_seqs, y_for_seqs
 
 
-def denoise_xy_features_wma(X, y, window: int):
+def denoise_xy_features_wma(X: np.ndarray, y: np.ndarray=None, window: int=TS_MIN_SEQUENCE_LEN) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    X_ = np.copy(X)
+
     for i in range(X.shape[1]):
         xi_ma = get_exponential_moving_average(X[:, i], window)
         X[:, i] = np.array(xi_ma)
 
-    y[:, 0] = get_exponential_moving_average(y[:, 0], window)
-    return X, y
+    if y is not None:
+        y_ = np.copy(y)
+        y_[:, 0] = get_exponential_moving_average(y[:, 0], window)
+        return X_, y_
+
+    return X_, None
 
 
 def split_seq_xy_pipe(X: np.ndarray, y: np.ndarray, seq_len: int, temporal: bool=True, test_size: float=TEST_SIZE,

@@ -7,7 +7,7 @@ from scipy import stats
 import numpy as np
 from constants import YDEX_TICKER, TS_MAX_SEQUENCE_LEN, RANDOM_STATE
 from data.candles import convert_datetime_api_format
-from model.mlp import (init_mlp_uni_reg, outer_seq_len_search, fit_mlp_uni_reg, predict_next_prices,
+from model.mlp import (init_mlp_uni_reg, outer_seq_len_search, predict_next_prices,
                        calc_metrics_mlp_uni_reg, log_metrics)
 from preproc.xy import get_candles_xy, split_xy_to_sequences, split_seq_xy_pipe, normalize_sequence_uni, NormType, \
     denoise_xy_features_wma
@@ -56,7 +56,7 @@ def main():
     local_test_size = 0.05
     X, y = get_candles_xy(from_iso, to_iso, ticker, to_cache=True)
     if ma_window > 0:
-        X, y = denoise_xy_features_wma(X, y, ma_window)
+        X, _ = denoise_xy_features_wma(X, window=ma_window)
     print(X.shape, y.shape)
     mlp_reg, seq_len = outer_seq_len_search(init_mlp_uni_reg(), "Root Mean Squared Error", X, y, norm_type=norm_type, temporal=temporal,
                                             test_size=local_test_size, min_len=1, max_len=max_seq_len, param_distr=search_params_distr,
