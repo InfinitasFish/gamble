@@ -1,7 +1,4 @@
 from typing import Tuple, Optional
-import os
-import sys
-sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 from enum import Enum
 import numpy as np
 from sklearn.base import TransformerMixin

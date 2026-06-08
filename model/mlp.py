@@ -1,7 +1,4 @@
 from typing import Dict, Tuple
-import os
-import sys
-sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 import warnings
 import numpy as np
 from sklearn.base import TransformerMixin

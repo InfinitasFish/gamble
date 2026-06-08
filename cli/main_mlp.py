@@ -1,8 +1,5 @@
 import argparse
 from datetime import datetime
-import os
-import sys
-sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 from scipy import stats
 import numpy as np
 from constants import YDEX_TICKER, TS_MAX_SEQUENCE_LEN, RANDOM_STATE
@@ -41,10 +38,6 @@ def main():
     verbose = args.verbose
     temporal = True
 
-    # testing hardcoded params
-    # norm_type = NormType.Standardize
-    # scale_y = True
-    # ma_window = 5
     search_params_distr = {"loss": ["squared_error"],
                            "learning_rate": ["constant", "adaptive"],
                            "hidden_layer_sizes": [(50,), (100,), (150,), (200,), (50, 50), (100, 100), (150, 150), (200, 200)],
@@ -67,7 +60,7 @@ def main():
                                                                              norm_type=norm_type, scale_y=scale_y)
     metrics = calc_metrics_mlp_uni_reg(mlp_reg, X_test, y_test, y_scaler)
     log_metrics(metrics, "test")
-    # d
+
     # TODO: metrics are better now, but R2 score is negative, so data is too noisy, also model tends to use smaller sequence length
     #    Possible fixes - feature selections, features denoising
     # full data fit, metrics, predict
@@ -80,7 +73,6 @@ def main():
     next_day_pred = predict_next_prices(mlp_reg, X, seq_len, y_scaler)[-1]
     print(f"\nPredictions for the day after {args.to_iso} is {next_day_pred}")
     print(f"Best sequence len is {seq_len}")
-
 
 if __name__ == "__main__":
     main()
