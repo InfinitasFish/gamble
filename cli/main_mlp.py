@@ -67,7 +67,7 @@ def main():
                                                                              norm_type=norm_type, scale_y=scale_y)
     metrics = calc_metrics_mlp_uni_reg(mlp_reg, X_test, y_test, y_scaler)
     log_metrics(metrics, "test")
-
+    # d
     # TODO: metrics are better now, but R2 score is negative, so data is too noisy, also model tends to use smaller sequence length
     #    Possible fixes - feature selections, features denoising
     # full data fit, metrics, predict
