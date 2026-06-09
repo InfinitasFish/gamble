@@ -60,7 +60,7 @@ def seq_len_search(init_mlp_reg: MLPRegressor, val_metric: str, X: np.ndarray, y
 
 def ma_window_search(init_mlp_reg: MLPRegressor, from_iso: str, to_iso: str, ticker: str, val_metric: str,
                      norm_type: NormType, temporal: bool=True, test_size: float=TEST_SIZE, seq_len: int=TS_MIN_SEQUENCE_LEN,
-                     param_distr: dict=None, max_ma_window: int=TS_MAX_SEQUENCE_LEN, cv: int=CV_FOLDS, verbose: int=0,
+                     param_distr: dict=None, max_ma_window: int=TS_MAX_SEQUENCE_LEN // 2, cv: int=CV_FOLDS, verbose: int=0,
                      random_state: int=RANDOM_STATE,
                      ) -> Tuple[MLPRegressor, int]:
     """Training multiple MLP to find best moving average window for prediction"""
@@ -87,6 +87,31 @@ def ma_window_search(init_mlp_reg: MLPRegressor, from_iso: str, to_iso: str, tic
             print(f"New best '{val_metric}': {best_val_error:.6f} with ma window {best_ma_window}")
 
     return best_mlp_reg, best_ma_window
+
+
+def is_temporal_better(init_mlp_reg: MLPRegressor, X: np.ndarray, y: np.ndarray, val_metric: str,
+                       norm_type: NormType, test_size: float=TEST_SIZE, seq_len: int=TS_MIN_SEQUENCE_LEN,
+                       param_distr: dict=None, cv: int=CV_FOLDS, verbose: int=0, random_state: int=RANDOM_STATE,
+                       ) -> Tuple[MLPRegressor, bool]:
+
+    best_val_error = float("inf")
+    best_mlp_reg = None
+    is_temporal = None
+    scale_y = True if norm_type != norm_type.NoNorm else False
+    for temporal_flag in [True, False]:
+
+        X_train, X_test, y_train, y_test, X_scaler, y_scaler = split_seq_xy_pipe(X, y, seq_len, temporal_flag, test_size,
+                                                                                 norm_type, scale_y)
+        trained_mlp_reg = train_mlp_uni_reg(init_mlp_reg, X_train, y_train, param_distr, cv, verbose, random_state)
+        target_error_metric = calc_metrics_mlp_uni_reg(trained_mlp_reg, X_test, y_test, y_scaler)[val_metric]
+
+        if target_error_metric < best_val_error:
+            best_val_error = target_error_metric
+            best_mlp_reg = trained_mlp_reg
+            is_temporal = temporal_flag
+            print(f"New best '{val_metric}': {best_val_error:.6f} with is_temporal={is_temporal}")
+
+    return best_mlp_reg, is_temporal
 
 
 def main():
@@ -119,9 +144,13 @@ def main():
                                      seq_len=bseq_len, param_distr=search_params_distr)
     print(f"Best norm_type for {ticker} is {bnorm_type}")
 
-    mlp_reg, bma_window = ma_window_search(init_mlp_uni_reg(), from_iso, to_iso, ticker, "Root Mean Squared Error",
+    _, bma_window = ma_window_search(init_mlp_uni_reg(), from_iso, to_iso, ticker, "Root Mean Squared Error",
                                            bnorm_type, True, local_test_size, bseq_len, search_params_distr)
     print(f"Best ma window for {ticker} is {bma_window}")
+
+    _, is_temporal = is_temporal_better(init_mlp_uni_reg(), X, y, "Root Mean Squared Error", bnorm_type,
+                                        local_test_size, bseq_len, search_params_distr)
+    print(f"Best split with is_temporal={is_temporal}")
 
 
 if __name__ == "__main__":

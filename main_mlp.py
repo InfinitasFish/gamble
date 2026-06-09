@@ -15,7 +15,9 @@ parser.add_argument("--from_iso", type=str, nargs='?', default=FROM_ISO, help="D
 parser.add_argument("--to_iso", type=str, nargs='?', default=TO_ISO, help="Date to take candles data up to (iso format)")
 parser.add_argument("--seq_len", type=int, nargs='?', default=1, help="Number of candles to train and predict the next value on")
 parser.add_argument("--norm_type", choices=["none", "minmax", "standardize"], nargs='?', default="none", help="Type of data normalization for training a model")
+# --no_scale_y / --no_temporal will be parsed as False
 parser.add_argument("--scale_y", action=argparse.BooleanOptionalAction, help="Enable target normalization for training a model")
+parser.add_argument("--temporal", action=argparse.BooleanOptionalAction, help="Enable temporal data splitting")
 parser.add_argument("--ma_window", type=int, nargs='?', default=0, help="Denoise data features with exp moving averages with window N")
 parser.add_argument("--val_metric", type=str, nargs='?', default="Root Mean Squared Error", help="Metric for selecting the best model")
 parser.add_argument("--verbose", type=int, nargs='?', default=1, help="Set verbosity for training a model")
@@ -34,9 +36,8 @@ def main():
         case _: raise ValueError("Bro")
     scale_y = args.scale_y
     ma_window = args.ma_window
+    temporal = args.temporal
     verbose = args.verbose
-    # don't see a point in random data splitting at all rn
-    temporal = True
 
     search_params_distr = {"loss": ["squared_error"],
                            "learning_rate": ["constant", "adaptive"],
