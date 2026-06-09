@@ -24,6 +24,8 @@ REST_API_DOMAIN = "invest-public-api.tbank.ru"
 BOND_REST = "/rest/tinkoff.public.invest.api.contract.v1.InstrumentsService/Bonds"
 BOND_BY_REST = "/rest/tinkoff.public.invest.api.contract.v1.InstrumentsService/BondBy"
 GET_CANDLES_REST = "/rest/tinkoff.public.invest.api.contract.v1.MarketDataService/GetCandles"
+FROM_ISO = "2024-01-01"
+TO_ISO = "2026-01-01"
 
 # actives idxs
 YDEX_ISIN = "RU000A107T19"

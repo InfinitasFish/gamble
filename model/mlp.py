@@ -4,14 +4,14 @@ import numpy as np
 from sklearn.base import TransformerMixin
 from sklearn.experimental import enable_halving_search_cv
 # after scaling targets model converges without warnings
-from sklearn.exceptions import ConvergenceWarning
-warnings.filterwarnings("ignore", category=ConvergenceWarning)
+# from sklearn.exceptions import ConvergenceWarning
+# warnings.filterwarnings("ignore", category=ConvergenceWarning)
 from sklearn.neural_network import MLPRegressor
 from sklearn.model_selection import HalvingRandomSearchCV, TimeSeriesSplit
 from sklearn.metrics import root_mean_squared_error, mean_absolute_error, median_absolute_error, mean_absolute_percentage_error
 
-from preproc.xy import split_xy_to_sequences, split_seq_xy_pipe, normalize_sequence_uni, NormType
-from constants import RANDOM_STATE, MAX_ITER, CV_FOLDS, TS_MIN_SEQUENCE_LEN, TS_MAX_SEQUENCE_LEN, TEST_SIZE
+from preproc.xy import split_xy_to_sequences, normalize_sequence_uni, NormType
+from constants import RANDOM_STATE, MAX_ITER, CV_FOLDS
 
 # TODO: there are specific mlp for timeseries, consider implementing, e.g. https://arxiv.org/pdf/2311.06184
 
@@ -40,29 +40,6 @@ def train_mlp_uni_reg(mlp_reg: MLPRegressor, X_train: np.ndarray, y_train: np.nd
                                        scoring="neg_root_mean_squared_error", cv=ts_cv, random_state=random_state, n_jobs=2, verbose=verbose,
                                        ).fit(X_train, y_train)
         return search.best_estimator_
-
-
-def outer_seq_len_search(init_mlp_reg: MLPRegressor, val_metric: str, X: np.ndarray, y: np.ndarray, norm_type: NormType=NormType.NoNorm,
-                         temporal: bool=True, test_size: float=TEST_SIZE, min_len: int=TS_MIN_SEQUENCE_LEN, max_len: int=TS_MAX_SEQUENCE_LEN,
-                         scale_y: bool=True, param_distr: dict=None, cv: int=CV_FOLDS, verbose: int=1, random_state: int=RANDOM_STATE
-                         ) -> Tuple[MLPRegressor, int]:
-    """Training multiple MLP to find best sequence length for prediction"""
-
-    best_val_error = float("inf")
-    best_mlp_reg = None
-    best_seq_len = -1
-    for seq_len in range(min_len, max_len + 1):
-        X_train, X_test, y_train, y_test, X_scaler, y_scaler = split_seq_xy_pipe(X, y, seq_len, temporal, test_size, norm_type, scale_y)
-        trained_mlp_reg = train_mlp_uni_reg(init_mlp_reg, X_train, y_train, param_distr, cv, verbose, random_state)
-        target_error_metric = calc_metrics_mlp_uni_reg(trained_mlp_reg, X_test, y_test, y_scaler)[val_metric]
-
-        if target_error_metric < best_val_error:
-            best_val_error = target_error_metric
-            best_mlp_reg = trained_mlp_reg
-            best_seq_len = seq_len
-            print(f"New best '{val_metric}': {best_val_error:.6f} with sequence_len {best_seq_len}")
-
-    return best_mlp_reg, best_seq_len
 
 
 def fit_mlp_uni_reg(mlp_reg: MLPRegressor, X: np.ndarray, y: np.ndarray, seq_len: int, norm_type: NormType=NormType.NoNorm,

@@ -2,17 +2,17 @@ import argparse
 from datetime import datetime
 from scipy import stats
 import numpy as np
-from constants import YDEX_TICKER, TS_MAX_SEQUENCE_LEN, RANDOM_STATE
+from constants import YDEX_TICKER, FROM_ISO, TO_ISO
 from data.candles import convert_datetime_api_format
 from model.mlp import (init_mlp_uni_reg, predict_next_prices, train_mlp_uni_reg, calc_metrics_mlp_uni_reg, log_metrics)
-from preproc.xy import get_candles_xy, split_xy_to_sequences, split_seq_xy_pipe, normalize_sequence_uni, NormType, \
-    denoise_xy_features_wma
+from preproc.xy import get_candles_xy, split_xy_to_sequences, split_seq_xy_pipe, normalize_sequence_uni, NormType, denoise_xy_features_wma
+
 
 parser = argparse.ArgumentParser()
 # no '--' means positional argument
 parser.add_argument("--ticker", type=str, nargs='?', default=YDEX_TICKER, help="Instrument's ticker on which model will be trained")
-parser.add_argument("--from_iso", type=str, nargs='?', default="2024-01-01", help="Date to take candles data from (iso format)")
-parser.add_argument("--to_iso", type=str, nargs='?', default="2026-01-01", help="Date to take candles data up to (iso format)")
+parser.add_argument("--from_iso", type=str, nargs='?', default=FROM_ISO, help="Date to take candles data from (iso format)")
+parser.add_argument("--to_iso", type=str, nargs='?', default=TO_ISO, help="Date to take candles data up to (iso format)")
 parser.add_argument("--seq_len", type=int, nargs='?', default=1, help="Number of candles to train and predict the next value on")
 parser.add_argument("--norm_type", choices=["none", "minmax", "standardize"], nargs='?', default="none", help="Type of data normalization for training a model")
 parser.add_argument("--scale_y", action=argparse.BooleanOptionalAction, help="Enable target normalization for training a model")
@@ -35,6 +35,7 @@ def main():
     scale_y = args.scale_y
     ma_window = args.ma_window
     verbose = args.verbose
+    # don't see a point in random data splitting at all rn
     temporal = True
 
     search_params_distr = {"loss": ["squared_error", "poisson"],
