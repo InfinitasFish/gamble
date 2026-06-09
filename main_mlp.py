@@ -38,17 +38,16 @@ def main():
     # don't see a point in random data splitting at all rn
     temporal = True
 
-    search_params_distr = {"loss": ["squared_error", "poisson"],
+    search_params_distr = {"loss": ["squared_error"],
                            "learning_rate": ["constant", "adaptive"],
-                           "hidden_layer_sizes": [(50,), (100,), (150,), (200,), (50, 50), (100, 100), (150, 150), (200, 200)],
-                           "solver": ["lbfgs", "adam"],
-                           "activation": ["relu", "logistic"],
+                           "hidden_layer_sizes": [(50,), (100,), (150,), (200,), (50, 50), (100, 100), (150, 150),
+                                                  (200, 200), (300,), (300, 300), (50, 50, 50), (100, 100, 100)],
                            # [loc, loc + scale]
                            "learning_rate_init": stats.uniform(0.0001, 0.1),
                            # [loc, scale]
-                           "max_iter": stats.randint(1000, 4000)}
+                           "max_iter": stats.randint(2000, 4000)}
 
-    local_test_size = 0.1
+    local_test_size = 0.25
     X, y = get_candles_xy(from_iso, to_iso, ticker, to_cache=True)
     if ma_window > 0:
         X, _ = denoise_xy_features_wma(X, window=ma_window)
@@ -75,7 +74,6 @@ def main():
 
     next_day_pred = predict_next_prices(mlp_reg, X, seq_len, y_scaler)[-1]
     print(f"\nPredictions for the day after {args.to_iso} is {next_day_pred}")
-    print(f"Best sequence len is {seq_len}")
 
 if __name__ == "__main__":
     main()

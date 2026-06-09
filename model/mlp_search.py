@@ -102,7 +102,7 @@ def main():
                            # [loc, scale]
                            "max_iter": stats.randint(1000, 4000)}
 
-    local_test_size = 0.1
+    local_test_size = 0.25
     ticker = YDEX_TICKER
     from_iso = convert_datetime_api_format(datetime.fromisoformat(FROM_ISO))
     to_iso = convert_datetime_api_format(datetime.fromisoformat(TO_ISO))
@@ -122,17 +122,6 @@ def main():
     mlp_reg, bma_window = ma_window_search(init_mlp_uni_reg(), from_iso, to_iso, ticker, "Root Mean Squared Error",
                                            bnorm_type, True, local_test_size, bseq_len, search_params_distr)
     print(f"Best ma window for {ticker} is {bma_window}")
-
-    # final fitting with good params
-    scale_y = True if bnorm_type != NormType.NoNorm else False
-    X, y, X_scaler, y_scaler = normalize_sequence_uni(X, y, bnorm_type, scale_y)
-    X, y = split_xy_to_sequences(X, y, bseq_len)
-    mlp_reg.fit(X, y)
-    metrics = calc_metrics_mlp_uni_reg(mlp_reg, X, y, y_scaler)
-    log_metrics(metrics, "full")
-
-    next_day_pred = predict_next_prices(mlp_reg, X, bseq_len, y_scaler)[-1]
-    print(f"\nPredictions for the day after {to_iso} is {next_day_pred}")
 
 
 if __name__ == "__main__":
