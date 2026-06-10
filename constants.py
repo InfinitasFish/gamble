@@ -4,6 +4,7 @@ load_dotenv()
 
 # tokens
 READ_ONLY_TOKEN = os.environ["READ_ONLY_TOKEN"]
+EODHD_API_TOKEN = os.environ["EODHD_API_TOKEN"]
 
 # she bounces on my root until I peak
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -24,7 +25,7 @@ REST_API_DOMAIN = "invest-public-api.tbank.ru"
 BOND_REST = "/rest/tinkoff.public.invest.api.contract.v1.InstrumentsService/Bonds"
 BOND_BY_REST = "/rest/tinkoff.public.invest.api.contract.v1.InstrumentsService/BondBy"
 GET_CANDLES_REST = "/rest/tinkoff.public.invest.api.contract.v1.MarketDataService/GetCandles"
-FROM_ISO = "2024-01-01"
+FROM_ISO = "2025-01-01"
 TO_ISO = "2026-01-01"
 
 # actives idxs
