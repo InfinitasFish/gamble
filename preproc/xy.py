@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from model.ma import get_exponential_moving_average
 from constants import TS_MAX_SEQUENCE_LEN, CACHE_DIR_FPATH, CANDLES_MULTI_TRAINING_FEATURES, CANDLES_UNI_TARGET_FEATURE, \
     TEST_SIZE, RANDOM_STATE, TS_MIN_SEQUENCE_LEN
-from data.candles import get_candles_data, get_candles_df
+from data.candles_tink import get_candles_data, get_tcandles_df
 
 
 class NormType(Enum):
@@ -81,7 +81,7 @@ def get_candles_xy(from_utc: str, to_utc: str, instrument_id: str, interval: str
                    cache_fpath: str=CACHE_DIR_FPATH, to_cache: bool=False) -> Tuple[np.ndarray, np.ndarray]:
 
     candles_data = get_candles_data(from_utc, to_utc, instrument_id, interval, cache_fpath, to_cache)
-    candles_df = get_candles_df(candles_data, train_features)
+    candles_df = get_tcandles_df(candles_data, train_features)
 
     target_features_df = []
     for feature in target_features:

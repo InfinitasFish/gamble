@@ -3,12 +3,13 @@ from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 import json
 import os
+from typing import Dict, Optional
 import pandas as pd
 
 from constants import REST_API_DOMAIN, READ_ONLY_TOKEN, GET_CANDLES_REST, YDEX_TICKER, CACHE_DIR_FPATH
 
 
-def get_candles_df(candles_data: dict, select_features: list=None) -> pd.DataFrame:
+def get_tcandles_df(candles_data: dict, select_features: list=None) -> pd.DataFrame:
     """parsing json data to pandas dataframe for training"""
     candles_data_for_df = defaultdict(list)
     for candle in candles_data["candles"]:
@@ -53,13 +54,15 @@ def map_api_interval_short(interval: str) -> str:
 # TODO: at some point better to make these 'await'
 def get_candles_data(from_utc: str, to_utc: str, instrument_id: str, interval: str="CANDLE_INTERVAL_DAY", cache_fpath: str=CACHE_DIR_FPATH, to_cache: bool=False) -> dict:
     interval_short = map_api_interval_short(interval)
-    save_data_fpath = f"{instrument_id}_{interval_short}_{from_utc[:-5]}_{to_utc[:-5]}.json".replace(':', '').replace('-', '_')
+    save_data_fpath = f"{instrument_id}_{from_utc[:-14]}_{to_utc[:-14]}_{interval_short}.json".replace(':', '').replace('-', '_')
     save_data_fpath = os.path.join(cache_fpath, save_data_fpath)
-    if os.path.exists(save_data_fpath):
-        with open(save_data_fpath, 'r', encoding="utf-8") as f:
-            candles_data_dict = json.load(f)
-        return candles_data_dict
 
+    # search in cache
+    cache_dict = try_load_cache_dict(save_data_fpath, test_key="candles")
+    if cache_dict is not None:
+        return cache_dict
+
+    # make request
     connection = http.client.HTTPSConnection(REST_API_DOMAIN)
     payload = json.dumps({
         "from": from_utc,
@@ -88,20 +91,27 @@ def get_candles_data(from_utc: str, to_utc: str, instrument_id: str, interval: s
     return candles_data_dict
 
 
-def load_candles_data(candles_data_fpath: str) -> dict:
-    with open(candles_data_fpath, 'r', encoding="utf-8") as f:
-        candles_data_dict = json.load(f)
-    return candles_data_dict
+def try_load_cache_dict(file_path: str, test_key: str) -> Optional[Dict]:
+    if os.path.exists(file_path):
+        with open(file_path, 'r', encoding="utf-8") as f:
+            candles_data_dict = json.load(f)
+        if test_key in candles_data_dict:
+            return candles_data_dict
+        # cache is invalid, delete and download again
+        else:
+            os.remove(file_path)
+            return None
 
 
-def convert_datetime_api_format(datetime: datetime) -> str:
+def convert_datetime_api_format(date_time: datetime) -> str:
     # target is like "2026-03-02T09:15:19.971Z"
-    return datetime.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + 'Z'
+    return date_time.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + 'Z'
 
 
 if __name__ == "__main__":
     now = convert_datetime_api_format(datetime.now(timezone.utc))
     ten_days_ago = convert_datetime_api_format(datetime.now(timezone.utc) - timedelta(days=10))
 
-    ydex_candle_data = get_candles_data(ten_days_ago, now, YDEX_TICKER)
-    print(ydex_candle_data)
+    ydex_candle_data = get_candles_data(ten_days_ago, now, YDEX_TICKER, to_cache=True)
+    ydex_candle_df = get_tcandles_df(ydex_candle_data)
+    print(ydex_candle_df.head())

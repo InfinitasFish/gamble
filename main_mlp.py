@@ -3,7 +3,7 @@ from datetime import datetime
 from scipy import stats
 import numpy as np
 from constants import YDEX_TICKER, FROM_ISO, TO_ISO
-from data.candles import convert_datetime_api_format
+from data.candles_tink import convert_datetime_api_format
 from model.mlp import (init_mlp_uni_reg, predict_next_prices, train_mlp_uni_reg, calc_metrics_mlp_uni_reg, log_metrics)
 from preproc.xy import get_candles_xy, split_xy_to_sequences, split_seq_xy_pipe, normalize_sequence_uni, NormType, denoise_xy_features_wma
 

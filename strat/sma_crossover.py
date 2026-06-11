@@ -3,8 +3,8 @@ import pandas as pd
 import numpy as np
 import vectorbt as vbt
 
-from data.candles import get_candles_data, get_candles_df, convert_datetime_api_format
-from data.eodhd import download_symbol_candles
+from data.candles_tink import get_candles_data, get_tcandles_df, convert_datetime_api_format
+from data.candles_eodhd import download_symbol_candles
 from constants import CACHE_DIR_FPATH, FROM_ISO, TO_ISO, EODHD_API_TOKEN, YDEX_TICKER
 
 
@@ -31,7 +31,7 @@ def sma_n1_n2_tink(ticker: str, from_iso: str=FROM_ISO, to_iso: str=TO_ISO, inte
     from_utc = convert_datetime_api_format(datetime.fromisoformat(from_iso))
     to_utc = convert_datetime_api_format(datetime.fromisoformat(to_iso))
     candles_data = get_candles_data(from_utc, to_utc, ticker, interval, cache_fpath, to_cache)
-    candles_df = get_candles_df(candles_data)
+    candles_df = get_tcandles_df(candles_data)
     prices = candles_df["close"]
 
     fast_ma = vbt.MA.run(prices, fast_window)

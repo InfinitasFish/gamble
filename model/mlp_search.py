@@ -4,7 +4,7 @@ import numpy as np
 from scipy import stats
 from sklearn.neural_network import MLPRegressor
 
-from data.candles import convert_datetime_api_format
+from data.candles_tink import convert_datetime_api_format
 from preproc.xy import NormType, split_seq_xy_pipe, get_candles_xy, denoise_xy_features_wma, split_xy_to_sequences, normalize_sequence_uni
 from model.mlp import init_mlp_uni_reg, train_mlp_uni_reg, calc_metrics_mlp_uni_reg, log_metrics, predict_next_prices
 from constants import FROM_ISO, TO_ISO, YDEX_TICKER, RANDOM_STATE, CV_FOLDS, TEST_SIZE, TS_MIN_SEQUENCE_LEN, TS_MAX_SEQUENCE_LEN

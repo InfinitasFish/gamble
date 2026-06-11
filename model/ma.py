@@ -95,7 +95,7 @@ def plot_ma_for_timeseries(ts_data: np.ndarray | pd.Series, window: int=TS_MIN_S
 
 if __name__ == "__main__":
     from datetime import datetime
-    from data.candles import convert_datetime_api_format
+    from data.candles_tink import convert_datetime_api_format
     from preproc.xy import get_candles_xy
     from constants import YDEX_TICKER, CANDLES_UNI_TARGET_FEATURE
 
