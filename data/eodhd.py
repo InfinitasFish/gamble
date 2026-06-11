@@ -25,7 +25,7 @@ def download_symbol_candles(symbol: str, from_iso: str=FROM_ISO, to_iso: str=TO_
 
 def download_symbol_intraday_candles(symbol: str, from_iso: str=FROM_ISO, to_iso: str=TO_ISO, interval: str="5m",
                                      api_token: str=EODHD_API_TOKEN) -> pd.DataFrame:
-    # unfortunately doesn't work without subscription
+    # todo: unfortunately doesn't work without subscription. search for alternatives?
 
     # a bit different url for intraday parsing
     # interval can be "1m", "5m", "1h"
