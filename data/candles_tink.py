@@ -82,7 +82,7 @@ def get_candles_data(from_utc: str, to_utc: str, instrument_id: str, interval: s
     candles_data_dict = json.loads(response.read().decode("utf-8"))
 
     if "candles" not in candles_data_dict:
-        raise ValueError("Unknown instrument")
+        raise ValueError(f"Unknown response format: {candles_data_dict}")
 
     if to_cache and not os.path.exists(save_data_fpath):
         with open(save_data_fpath, 'w', encoding="utf-8") as f:
