@@ -1,6 +1,9 @@
 import os
 from dotenv import load_dotenv
+from sympy.physics.units import years
+
 load_dotenv()
+from datetime import timedelta
 
 # tokens
 READ_ONLY_TOKEN = os.environ["READ_ONLY_TOKEN"]
@@ -41,6 +44,10 @@ CACHE_DIR_FPATH = os.path.join(ROOT_DIR, "cache")
 BONDS_DATA_FPATH = os.path.join(CACHE_DIR_FPATH, "all_bonds_data.json")
 
 # utils
-TINK_TIME_INTERVALS = ["CANDLE_INTERVAL_5_MIN", "CANDLE_INTERVAL_10_MIN", "CANDLE_INTERVAL_15_MIN", "CANDLE_INTERVAL_30_MIN",
-                       "CANDLE_INTERVAL_2_HOUR", "CANDLE_INTERVAL_HOUR", "CANDLE_INTERVAL_4_HOUR", "CANDLE_INTERVAL_DAY",
-                       "CANDLE_INTERVAL_WEEK", "CANDLE_INTERVAL_MONTH"]
+TINK_INTERVALS = ["CANDLE_INTERVAL_5_MIN", "CANDLE_INTERVAL_10_MIN", "CANDLE_INTERVAL_15_MIN", "CANDLE_INTERVAL_30_MIN",
+                  "CANDLE_INTERVAL_HOUR", "CANDLE_INTERVAL_2_HOUR", "CANDLE_INTERVAL_4_HOUR", "CANDLE_INTERVAL_DAY",
+                  "CANDLE_INTERVAL_WEEK", "CANDLE_INTERVAL_MONTH"]
+TINK_TIME_PERIODS_IN_DAYS = [timedelta(days=1), timedelta(days=1), timedelta(days=1), timedelta(days=2), timedelta(days=7),
+                             timedelta(days=30), timedelta(days=30), timedelta(days=365), timedelta(days=365 * 2),
+                             timedelta(days=365 * 10)]
+INTERVAL_TO_MAX_PERIOD = {k: v for k, v in zip(TINK_INTERVALS, TINK_TIME_PERIODS_IN_DAYS)}

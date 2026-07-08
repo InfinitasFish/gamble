@@ -6,10 +6,17 @@ import os
 from typing import Dict, Optional
 import pandas as pd
 
-from constants import REST_API_DOMAIN, READ_ONLY_TOKEN, GET_CANDLES_REST, YDEX_TICKER, CACHE_DIR_FPATH
+from constants import REST_API_DOMAIN, READ_ONLY_TOKEN, GET_CANDLES_REST, YDEX_TICKER, CACHE_DIR_FPATH, TINK_INTERVALS
 
 
-def get_tcandles_df(candles_data: dict, select_features: list=None) -> pd.DataFrame:
+
+# check this out https://tinkoff.github.io/investAPI/load_history/
+# make consecutive request for small intervals with big time periods, collect all the data
+def get_candles_data_consecutive():
+    pass
+
+
+def get_candles_df(candles_data: dict, select_features: list=None) -> pd.DataFrame:
     """parsing json data to pandas dataframe for training"""
     candles_data_for_df = defaultdict(list)
     for candle in candles_data["candles"]:

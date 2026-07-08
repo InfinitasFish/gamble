@@ -8,7 +8,7 @@ import vectorbt as vbt
 from data.candles_tink import get_candles_data, get_tcandles_df, convert_datetime_api_format
 from data.candles_eodhd import download_symbol_candles
 from strat import SignalStrategyInterface
-from constants import TINK_TIME_INTERVALS, CACHE_DIR_FPATH, FROM_ISO, TO_ISO, EODHD_API_TOKEN, YDEX_TICKER
+from constants import CACHE_DIR_FPATH, FROM_ISO, TO_ISO, EODHD_API_TOKEN, YDEX_TICKER, TINK_INTERVALS
 
 
 # proper object for experiments on tink
@@ -35,6 +35,8 @@ class SMACrossover(SignalStrategyInterface):
         stats = pf.stats()
         return stats
 
+    # check this out https://tinkoff.github.io/investAPI/load_history/
+    # so for smaller interval we have to set smaller time period
     def tink_test_intervals(self, ticker: str, from_iso: str, to_iso: str, intervals: List[str], metric: str) -> str:
         best_interval = intervals[0]
         best_metric = -float("inf")
@@ -66,5 +68,6 @@ def sma_20_50_eod(symbol: str, from_iso: str=FROM_ISO, to_iso: str=TO_ISO, perio
 
 
 if __name__ == "__main__":
-    s = SMACrossover(YDEX_TICKER, 20, 50, "CANDLE_INTERVAL_5_MIN")
-    print(s.tink_test_intervals(YDEX_TICKER, FROM_ISO, TO_ISO, TINK_TIME_INTERVALS, "Expectancy"))
+    s = SMACrossover(YDEX_TICKER, 20, 50, "CANDLE_INTERVAL_30_MIN")
+    intervals = TINK_INTERVALS
+    print(s.tink_test_intervals(YDEX_TICKER, "2026-06-01", "2026-07-01", intervals, "Expectancy"))
