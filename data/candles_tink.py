@@ -3,17 +3,37 @@ from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 import json
 import os
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 import pandas as pd
 
-from constants import REST_API_DOMAIN, READ_ONLY_TOKEN, GET_CANDLES_REST, YDEX_TICKER, CACHE_DIR_FPATH, TINK_INTERVALS
+from constants import REST_API_DOMAIN, READ_ONLY_TOKEN, GET_CANDLES_REST, YDEX_TICKER, CACHE_DIR_FPATH, INTERVAL_TO_MAX_PERIOD
 
+
+def split_time_period(from_utc: str, to_utc: str, max_delta: int) -> List[datetime]:
+    from_date = datetime.fromisoformat(from_utc)
+    to_date = datetime.fromisoformat(to_utc)
+    diff = to_date - from_date
+    split_periods = [from_utc]
+    num_periods = diff.days // max_delta + 1
+
+    for i in range(num_periods):
+        if i + 1 != num_periods:
+            p = from_date + timedelta(days=max_delta * (i + 1))
+        else:
+            tail = diff.days - max_delta * i
+            p = from_date + timedelta(days=max_delta * i + tail)
+        split_periods.append(p)
+
+    return split_periods
 
 
 # check this out https://tinkoff.github.io/investAPI/load_history/
 # make consecutive request for small intervals with big time periods, collect all the data
-def get_candles_data_consecutive():
-    pass
+def get_candles_data_consecutive(from_utc: str, to_utc: str, instrument_id: str, interval: str="CANDLE_INTERVAL_DAY",
+                                 cache_fpath: str=CACHE_DIR_FPATH, to_cache: bool=False) -> dict:
+    to_split = False
+    if (datetime.fromisoformat(to_utc) - datetime.fromisoformat(from_utc)) > INTERVAL_TO_MAX_PERIOD[interval]:
+        to_split = True
 
 
 def get_candles_df(candles_data: dict, select_features: list=None) -> pd.DataFrame:
