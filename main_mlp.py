@@ -26,8 +26,8 @@ parser.add_argument("--verbose", type=int, nargs='?', default=1, help="Set verbo
 def main():
     args = parser.parse_args()
     ticker = args.ticker.upper()
-    from_iso = convert_datetime_api_format(datetime.fromisoformat(args.from_iso))
-    to_iso = convert_datetime_api_format(datetime.fromisoformat(args.to_iso))
+    from_utc = convert_datetime_api_format(datetime.fromisoformat(args.from_iso))
+    to_utc = convert_datetime_api_format(datetime.fromisoformat(args.to_iso))
     seq_len = args.seq_len
     match args.norm_type:
         case "none": norm_type = NormType.NoNorm
@@ -49,7 +49,7 @@ def main():
                            "max_iter": stats.randint(2000, 4000)}
 
     local_test_size = 0.25
-    X, y = get_candles_xy(from_iso, to_iso, ticker, to_cache=True)
+    X, y = get_candles_xy(from_utc, to_utc, ticker, to_cache=True)
     if ma_window > 0:
         X, _ = denoise_xy_features_wma(X, window=ma_window)
 
