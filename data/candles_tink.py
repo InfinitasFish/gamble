@@ -27,6 +27,7 @@ def split_time_period(from_iso: str, to_iso: str, max_delta: int) -> List[str]:
     return split_periods
 
 
+# https://developer.tbank.ru/invest/api/market-data-service-get-candles
 # check this out https://tinkoff.github.io/investAPI/load_history/
 # make consecutive request for small intervals with big time periods, collect all the data
 # TODO: implement parallel requesting with mutex
@@ -47,7 +48,7 @@ def get_candles_data_consecutive(from_iso: str, to_iso: str, instrument_id: str,
     joined_json_dict = {"candles": []}
     # have to make consecutive reqs
     if (datetime.fromisoformat(to_iso) - datetime.fromisoformat(from_iso)) > max_time_delta:
-        split_periods = split_time_period(from_iso, to_iso, max_time_delta)
+        split_periods = split_time_period(from_iso, to_iso, max_time_delta.days)
 
         for i in range(1, len(split_periods)):
             from_period = split_periods[i - 1]
@@ -57,14 +58,14 @@ def get_candles_data_consecutive(from_iso: str, to_iso: str, instrument_id: str,
             if "candles" not in period_candle_dict:
                 raise ValueError(f"Unknown response format: {period_candle_dict}")
 
-            joined_json_dict["candles"].append(period_candle_dict)
+            joined_json_dict["candles"].extend(period_candle_dict["candles"])
     # make single request
     else:
         period_candle_dict = get_candles_single_request(from_iso, to_iso, instrument_id, interval)
         if "candles" not in period_candle_dict:
             raise ValueError(f"Unknown response format: {period_candle_dict}")
 
-        joined_json_dict["candles"].append(period_candle_dict)
+        joined_json_dict["candles"].extend(period_candle_dict["candles"])
 
     if to_cache and not os.path.exists(save_data_fpath):
         with open(save_data_fpath, 'w', encoding="utf-8") as f:
@@ -139,47 +140,6 @@ def map_api_interval_short(interval: str) -> str:
                      "CANDLE_INTERVAL_4_HOUR": "4hour", "CANDLE_INTERVAL_DAY": "day", "CANDLE_INTERVAL_WEEK": "week",
                      "CANDLE_INTERVAL_MONTH": "month"}
     return full_to_short.get(interval, '')
-
-
-# https://developer.tbank.ru/invest/api/market-data-service-get-candles
-# TODO: delete
-def get_candles_data(from_utc: str, to_utc: str, instrument_id: str, interval: str="CANDLE_INTERVAL_DAY", cache_fpath: str=CACHE_DIR_FPATH, to_cache: bool=False) -> dict:
-    interval_short = map_api_interval_short(interval)
-    save_data_fpath = f"{instrument_id}_{from_utc[:-14]}_{to_utc[:-14]}_{interval_short}.json".replace(':', '').replace('-', '_')
-    save_data_fpath = os.path.join(cache_fpath, save_data_fpath)
-
-    # search in cache
-    cache_dict = try_load_cache_dict(save_data_fpath, test_key="candles")
-    if cache_dict is not None:
-        return cache_dict
-
-    # make request
-    connection = http.client.HTTPSConnection(REST_API_DOMAIN)
-    payload = json.dumps({
-        "from": from_utc,
-        "to": to_utc,
-        "interval": interval,
-        "instrumentId": f"{instrument_id}",
-    })
-
-    headers = {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Authorization": f"Bearer {READ_ONLY_TOKEN}"
-    }
-
-    connection.request("POST", GET_CANDLES_REST, payload, headers)
-    response = connection.getresponse()
-    candles_data_dict = json.loads(response.read().decode("utf-8"))
-
-    if "candles" not in candles_data_dict:
-        raise ValueError(f"Unknown response format: {candles_data_dict}")
-
-    if to_cache and not os.path.exists(save_data_fpath):
-        with open(save_data_fpath, 'w', encoding="utf-8") as f:
-            json.dump(candles_data_dict, f)
-
-    return candles_data_dict
 
 
 def try_load_cache_dict(file_path: str, test_key: str) -> Optional[Dict]:
