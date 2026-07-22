@@ -98,17 +98,9 @@ def calc_metrics_mlp_uni_reg(mlp_reg: MLPRegressor, X: np.ndarray, y: np.ndarray
     if preds.ndim == 2 and preds.shape[1] == 1:
         preds = preds.reshape(-1)
 
-    # calculates how often pred price moves the same direction as y price
+    # calculates how often pred price moves the same direction as y
     # will not work for multivariate predictions
-    price_direction_preds = []
-    for i in range(1, y.shape[0]):
-        pred_direction = preds[i] - preds[i - 1]
-        y_direction = y[i] - y[i - 1]
-        if (pred_direction >= 0 and y_direction >= 0) or (pred_direction <= 0 and y_direction <= 0):
-            price_direction_preds.append(1)
-        else:
-            price_direction_preds.append(0)
-    correct_direction_percent = sum(price_direction_preds) / len(price_direction_preds)
+    correct_direction_percent = np.mean(((preds >= 0) & (y >= 0)) | ((preds < 0) & (y < 0)))
 
     metrics["R2 Score"] = r2_score(y, preds)
     metrics["Root Mean Squared Error"] = root_mean_squared_error(y, preds)
@@ -118,6 +110,7 @@ def calc_metrics_mlp_uni_reg(mlp_reg: MLPRegressor, X: np.ndarray, y: np.ndarray
     metrics["Correct Price Direction Percentage"] = correct_direction_percent
 
     return metrics
+
 
 def calc_metrics_for_predictions(preds: np.ndarray, y: np.ndarray) -> Dict[str, float]:
     metrics = {}
@@ -127,15 +120,7 @@ def calc_metrics_for_predictions(preds: np.ndarray, y: np.ndarray) -> Dict[str, 
     if preds.ndim == 2 and preds.shape[1] == 1:
         preds = preds.reshape(-1)
 
-    price_direction_preds = []
-    for i in range(1, y.shape[0]):
-        pred_direction = preds[i] - preds[i - 1]
-        y_direction = y[i] - y[i - 1]
-        if (pred_direction >= 0 and y_direction >= 0) or (pred_direction <= 0 and y_direction <= 0):
-            price_direction_preds.append(1)
-        else:
-            price_direction_preds.append(0)
-    correct_direction_percent = sum(price_direction_preds) / len(price_direction_preds)
+    correct_direction_percent = np.mean(((preds >= 0) & (y >= 0)) | ((preds < 0) & (y < 0)))
 
     metrics["R2 Score"] = r2_score(y, preds)
     metrics["Root Mean Squared Error"] = root_mean_squared_error(y, preds)
@@ -145,3 +130,4 @@ def calc_metrics_for_predictions(preds: np.ndarray, y: np.ndarray) -> Dict[str, 
     metrics["Correct Price Direction Percentage"] = correct_direction_percent
 
     return metrics
+

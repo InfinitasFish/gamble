@@ -1,6 +1,7 @@
 from typing import Tuple, Optional
 from enum import Enum
 import numpy as np
+import pandas as pd
 from sklearn.base import TransformerMixin
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import train_test_split
@@ -72,9 +73,12 @@ def train_test_split_temporal(X: np.ndarray, y: np.ndarray, test_size: float
     X_train, y_train = X[:train_idx_border], y[:train_idx_border]
     X_test, y_test = X[train_idx_border:], y[train_idx_border:]
 
-
     return X_train, X_test, y_train, y_test
 
+
+def target_log_transform(feature_col: pd.Series) -> pd.Series:
+    transformed = np.log(feature_col.shift(-1) / feature_col)
+    return transformed
 
 def get_candles_xy(from_utc: str, to_utc: str, instrument_id: str, interval: str= "CANDLE_INTERVAL_DAY",
                    train_features: list=CANDLES_MULTI_TRAINING_FEATURES, target_features: list=CANDLES_UNI_TARGET_FEATURE,
@@ -86,7 +90,7 @@ def get_candles_xy(from_utc: str, to_utc: str, instrument_id: str, interval: str
     target_features_df = []
     for feature in target_features:
         target_features_df.append(f"target_{feature}")
-        candles_df[f"target_{feature}"] = candles_df[feature].shift(-1)
+        candles_df[f"target_{feature}"] = target_log_transform(candles_df[feature])
     candles_df = candles_df.dropna()
 
     X = np.array(candles_df[train_features])

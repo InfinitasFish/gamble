@@ -2,6 +2,7 @@ import argparse
 from datetime import datetime
 from scipy import stats
 import numpy as np
+
 from constants import YDEX_TICKER, FROM_ISO, TO_ISO
 from data.candles_tink import convert_datetime_api_format
 from model.mlp import (init_mlp_uni_reg, predict_next_prices, train_mlp_uni_reg, calc_metrics_mlp_uni_reg,
@@ -15,10 +16,10 @@ parser.add_argument("--ticker", type=str, nargs='?', default=YDEX_TICKER, help="
 parser.add_argument("--from_iso", type=str, nargs='?', default=FROM_ISO, help="Date to take candles data from (iso format)")
 parser.add_argument("--to_iso", type=str, nargs='?', default=TO_ISO, help="Date to take candles data up to (iso format)")
 parser.add_argument("--seq_len", type=int, nargs='?', default=1, help="Number of candles to train and predict the next value on")
-parser.add_argument("--norm_type", choices=["none", "minmax", "standardize"], nargs='?', default="none", help="Type of data normalization for training a model")
+parser.add_argument("--norm_type", choices=["none", "minmax", "standardize"], nargs='?', default="standardize", help="Type of data normalization for training a model")
 # --no_scale_y / --no_temporal will be parsed as False
-parser.add_argument("--scale_y", action=argparse.BooleanOptionalAction, help="Enable target normalization for training a model")
-parser.add_argument("--temporal", action=argparse.BooleanOptionalAction, help="Enable temporal data splitting")
+parser.add_argument("--scale_y", action=argparse.BooleanOptionalAction, default=False, help="Enable target normalization for training a model")
+# parser.add_argument("--temporal", action=argparse.BooleanOptionalAction, help="Enable temporal data splitting")
 parser.add_argument("--ma_window", type=int, nargs='?', default=0, help="Denoise data features with exp moving averages with window N")
 parser.add_argument("--val_metric", type=str, nargs='?', default="Root Mean Squared Error", help="Metric for selecting the best model")
 parser.add_argument("--verbose", type=int, nargs='?', default=1, help="Set verbosity for training a model")
@@ -35,9 +36,9 @@ def main():
         case "minmax": norm_type = NormType.MinMax
         case "standardize": norm_type = NormType.Standardize
         case _: raise ValueError("Bro")
-    scale_y = args.scale_y
+    scale_y = False
     ma_window = args.ma_window
-    temporal = args.temporal
+    temporal = True
     verbose = args.verbose
 
     search_params_distr = {"loss": ["squared_error"],
@@ -65,8 +66,8 @@ def main():
     metrics = calc_metrics_mlp_uni_reg(mlp_reg, X_test, y_test, y_scaler)
     log_metrics(metrics, "test")
 
-    # checking naive model
-    naive_preds = X_test[:, -1]
+    # comparing with naive model
+    naive_preds = np.array([np.mean(y_train) for _ in range(y_test.shape[0])])
     metrics = calc_metrics_for_predictions(naive_preds, y_test)
     log_metrics(metrics, "test naive")
 
