@@ -4,7 +4,8 @@ from scipy import stats
 import numpy as np
 from constants import YDEX_TICKER, FROM_ISO, TO_ISO
 from data.candles_tink import convert_datetime_api_format
-from model.mlp import (init_mlp_uni_reg, predict_next_prices, train_mlp_uni_reg, calc_metrics_mlp_uni_reg, log_metrics)
+from model.mlp import (init_mlp_uni_reg, predict_next_prices, train_mlp_uni_reg, calc_metrics_mlp_uni_reg,
+                       calc_metrics_for_predictions, log_metrics)
 from preproc.xy import get_candles_xy, split_xy_to_sequences, split_seq_xy_pipe, normalize_sequence_uni, NormType, denoise_xy_features_wma
 
 
@@ -64,8 +65,11 @@ def main():
     metrics = calc_metrics_mlp_uni_reg(mlp_reg, X_test, y_test, y_scaler)
     log_metrics(metrics, "test")
 
-    # TODO: metrics are better now, but R2 score is negative, so data is too noisy, also model tends to use smaller sequence length
-    #    Possible fixes - feature selections, features denoising
+    # checking naive model
+    naive_preds = X_test[:, -1]
+    metrics = calc_metrics_for_predictions(naive_preds, y_test)
+    log_metrics(metrics, "test naive")
+
     # full data fit, metrics, predict
     X, y, X_scaler, y_scaler = normalize_sequence_uni(X, y, norm_type, scale_y)
     X, y = split_xy_to_sequences(X, y, seq_len)
@@ -75,6 +79,7 @@ def main():
 
     next_day_pred = predict_next_prices(mlp_reg, X, seq_len, y_scaler)[-1]
     print(f"\nPredictions for the day after {args.to_iso} is {next_day_pred}")
+
 
 if __name__ == "__main__":
     main()

@@ -8,7 +8,7 @@ from sklearn.experimental import enable_halving_search_cv
 # warnings.filterwarnings("ignore", category=ConvergenceWarning)
 from sklearn.neural_network import MLPRegressor
 from sklearn.model_selection import HalvingRandomSearchCV, TimeSeriesSplit
-from sklearn.metrics import root_mean_squared_error, mean_absolute_error, median_absolute_error, mean_absolute_percentage_error
+from sklearn.metrics import root_mean_squared_error, mean_absolute_error, median_absolute_error, mean_absolute_percentage_error, r2_score
 
 from preproc.xy import split_xy_to_sequences, normalize_sequence_uni, NormType
 from constants import RANDOM_STATE, MAX_ITER, CV_FOLDS
@@ -110,7 +110,34 @@ def calc_metrics_mlp_uni_reg(mlp_reg: MLPRegressor, X: np.ndarray, y: np.ndarray
             price_direction_preds.append(0)
     correct_direction_percent = sum(price_direction_preds) / len(price_direction_preds)
 
-    metrics["R2 Score"] = mlp_reg.score(X, y)
+    metrics["R2 Score"] = r2_score(y, preds)
+    metrics["Root Mean Squared Error"] = root_mean_squared_error(y, preds)
+    metrics["Mean Absolute Error"] = mean_absolute_error(y, preds)
+    metrics["Mean Absolute Percentage Error"] = mean_absolute_percentage_error(y, preds)
+    metrics["Median Absolute Error"] = median_absolute_error(y, preds)
+    metrics["Correct Price Direction Percentage"] = correct_direction_percent
+
+    return metrics
+
+def calc_metrics_for_predictions(preds: np.ndarray, y: np.ndarray) -> Dict[str, float]:
+    metrics = {}
+
+    if y.ndim == 2 and y.shape[1] == 1:
+        y = y.reshape(-1)
+    if preds.ndim == 2 and preds.shape[1] == 1:
+        preds = preds.reshape(-1)
+
+    price_direction_preds = []
+    for i in range(1, y.shape[0]):
+        pred_direction = preds[i] - preds[i - 1]
+        y_direction = y[i] - y[i - 1]
+        if (pred_direction >= 0 and y_direction >= 0) or (pred_direction <= 0 and y_direction <= 0):
+            price_direction_preds.append(1)
+        else:
+            price_direction_preds.append(0)
+    correct_direction_percent = sum(price_direction_preds) / len(price_direction_preds)
+
+    metrics["R2 Score"] = r2_score(y, preds)
     metrics["Root Mean Squared Error"] = root_mean_squared_error(y, preds)
     metrics["Mean Absolute Error"] = mean_absolute_error(y, preds)
     metrics["Mean Absolute Percentage Error"] = mean_absolute_percentage_error(y, preds)
