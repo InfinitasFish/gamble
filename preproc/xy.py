@@ -117,6 +117,8 @@ def normalize_sequence_uni(X: np.ndarray, y: np.ndarray, norm_type: NormType=Nor
 
         if scale_y:
             y = y_scaler.fit_transform(y)
+        else:
+            y_scaler = None
 
     return X, y, X_scaler, y_scaler
 
