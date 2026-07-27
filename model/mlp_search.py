@@ -21,7 +21,7 @@ def norm_type_search(init_mlp_reg: MLPRegressor, val_metric: str, X: np.ndarray,
     best_norm_type = None
     for norm_type in [NormType.NoNorm, NormType.Standardize, NormType.MinMax]:
         X_train, X_test, y_train, y_test, X_scaler, y_scaler = split_seq_xy_pipe(X, y, seq_len, temporal, test_size,
-                                                                                 norm_type, scale_y=True)
+                                                                                 norm_type, scale_y=False)
         trained_mlp_reg = train_mlp_uni_reg(init_mlp_reg, X_train, y_train, param_distr, cv, verbose, random_state)
         target_error_metric = calc_metrics_mlp_uni_reg(trained_mlp_reg, X_test, y_test, y_scaler)[val_metric]
 
@@ -36,7 +36,7 @@ def norm_type_search(init_mlp_reg: MLPRegressor, val_metric: str, X: np.ndarray,
 
 def seq_len_search(init_mlp_reg: MLPRegressor, val_metric: str, X: np.ndarray, y: np.ndarray, norm_type: NormType=NormType.NoNorm,
                    temporal: bool=True, test_size: float=TEST_SIZE, min_len: int=TS_MIN_SEQUENCE_LEN, max_len: int=TS_MAX_SEQUENCE_LEN,
-                   scale_y: bool=True, param_distr: dict=None, cv: int=CV_FOLDS, verbose: int=0, random_state: int=RANDOM_STATE
+                   param_distr: dict=None, cv: int=CV_FOLDS, verbose: int=0, random_state: int=RANDOM_STATE
                    ) -> Tuple[MLPRegressor, int]:
     """Training multiple MLP to find the best sequence length for prediction"""
 
@@ -45,7 +45,7 @@ def seq_len_search(init_mlp_reg: MLPRegressor, val_metric: str, X: np.ndarray, y
     best_seq_len = -1
     for seq_len in range(min_len, max_len + 1):
         X_train, X_test, y_train, y_test, X_scaler, y_scaler = split_seq_xy_pipe(X, y, seq_len, temporal, test_size,
-                                                                                 norm_type, scale_y)
+                                                                                 norm_type, scale_y=False)
         trained_mlp_reg = train_mlp_uni_reg(init_mlp_reg, X_train, y_train, param_distr, cv, verbose, random_state)
         target_error_metric = calc_metrics_mlp_uni_reg(trained_mlp_reg, X_test, y_test, y_scaler)[val_metric]
 
@@ -58,7 +58,7 @@ def seq_len_search(init_mlp_reg: MLPRegressor, val_metric: str, X: np.ndarray, y
     return best_mlp_reg, best_seq_len
 
 
-def ma_window_search(init_mlp_reg: MLPRegressor, from_iso: str, to_iso: str, ticker: str, val_metric: str,
+def ma_window_search(init_mlp_reg: MLPRegressor, val_metric: str, X: np.ndarray, y: np.ndarray,
                      norm_type: NormType, temporal: bool=True, test_size: float=TEST_SIZE, seq_len: int=TS_MIN_SEQUENCE_LEN,
                      param_distr: dict=None, max_ma_window: int=TS_MAX_SEQUENCE_LEN // 2, cv: int=CV_FOLDS, verbose: int=0,
                      random_state: int=RANDOM_STATE,
@@ -68,14 +68,13 @@ def ma_window_search(init_mlp_reg: MLPRegressor, from_iso: str, to_iso: str, tic
     best_val_error = float("inf")
     best_mlp_reg = None
     best_ma_window = None
-    scale_y = True if norm_type != norm_type.NoNorm else False
     for ma_window in range(0, max_ma_window + 1):
 
-        X, y = get_candles_xy(from_iso, to_iso, ticker, to_cache=True)
+        X_ma = np.copy(X)
         if ma_window > 0:
-            X, _ = denoise_xy_features_wma(X, window=ma_window)
-        X_train, X_test, y_train, y_test, X_scaler, y_scaler = split_seq_xy_pipe(X, y, seq_len, temporal, test_size,
-                                                                                 norm_type, scale_y)
+            X_ma, _ = denoise_xy_features_wma(X_ma, window=ma_window)
+        X_train, X_test, y_train, y_test, X_scaler, y_scaler = split_seq_xy_pipe(X_ma, y, seq_len, temporal, test_size,
+                                                                                 norm_type, scale_y=False)
 
         trained_mlp_reg = train_mlp_uni_reg(init_mlp_reg, X_train, y_train, param_distr, cv, verbose, random_state)
         target_error_metric = calc_metrics_mlp_uni_reg(trained_mlp_reg, X_test, y_test, y_scaler)[val_metric]
@@ -89,6 +88,7 @@ def ma_window_search(init_mlp_reg: MLPRegressor, from_iso: str, to_iso: str, tic
     return best_mlp_reg, best_ma_window
 
 
+# useless test
 def is_temporal_better(init_mlp_reg: MLPRegressor, X: np.ndarray, y: np.ndarray, val_metric: str,
                        norm_type: NormType, test_size: float=TEST_SIZE, seq_len: int=TS_MIN_SEQUENCE_LEN,
                        param_distr: dict=None, cv: int=CV_FOLDS, verbose: int=0, random_state: int=RANDOM_STATE,
@@ -97,11 +97,10 @@ def is_temporal_better(init_mlp_reg: MLPRegressor, X: np.ndarray, y: np.ndarray,
     best_val_error = float("inf")
     best_mlp_reg = None
     is_temporal = None
-    scale_y = True if norm_type != norm_type.NoNorm else False
     for temporal_flag in [True, False]:
 
         X_train, X_test, y_train, y_test, X_scaler, y_scaler = split_seq_xy_pipe(X, y, seq_len, temporal_flag, test_size,
-                                                                                 norm_type, scale_y)
+                                                                                 norm_type, scale_y=False)
         trained_mlp_reg = train_mlp_uni_reg(init_mlp_reg, X_train, y_train, param_distr, cv, verbose, random_state)
         target_error_metric = calc_metrics_mlp_uni_reg(trained_mlp_reg, X_test, y_test, y_scaler)[val_metric]
 
@@ -115,7 +114,9 @@ def is_temporal_better(init_mlp_reg: MLPRegressor, X: np.ndarray, y: np.ndarray,
 
 
 def main():
-    # search all non-model hyperparameters, while using the best parameter in consecutive searches
+    # search all non-model hyperparameters, while using the best parameter in consecutive search.
+    # search is naive because we assume that best parameter on first step will contribute to the best quality
+    # on the next step
 
     # smaller search than main fit
     search_params_distr = {"loss": ["squared_error"],
@@ -134,22 +135,27 @@ def main():
     X, y = get_candles_xy(from_iso, to_iso, ticker, to_cache=True)
     print(X.shape, y.shape)
 
-    _, bseq_len = seq_len_search(init_mlp_uni_reg(), "Root Mean Squared Error", X, y,
-                                norm_type=NormType.NoNorm, test_size=local_test_size,
-                                min_len=TS_MIN_SEQUENCE_LEN, max_len=TS_MAX_SEQUENCE_LEN, scale_y=False,
-                                param_distr=search_params_distr, cv=CV_FOLDS, verbose=0)
+    _, bseq_len = seq_len_search(init_mlp_uni_reg(), val_metric="Root Mean Squared Error", X=X, y=y,
+                                 norm_type=NormType.NoNorm, test_size=local_test_size,
+                                 min_len=TS_MIN_SEQUENCE_LEN, max_len=TS_MAX_SEQUENCE_LEN,
+                                 param_distr=search_params_distr)
     print(f"Best seq_len for {ticker} is {bseq_len}")
 
-    _, bnorm_type = norm_type_search(init_mlp_uni_reg(), "Root Mean Squared Error", X, y, test_size=local_test_size,
-                                     seq_len=bseq_len, param_distr=search_params_distr)
+
+    _, bnorm_type = norm_type_search(init_mlp_uni_reg(), val_metric="Root Mean Squared Error", X=X, y=y,
+                                     test_size=local_test_size, seq_len=bseq_len, param_distr=search_params_distr)
     print(f"Best norm_type for {ticker} is {bnorm_type}")
 
-    _, bma_window = ma_window_search(init_mlp_uni_reg(), from_iso, to_iso, ticker, "Root Mean Squared Error",
-                                           bnorm_type, True, local_test_size, bseq_len, search_params_distr)
+
+    _, bma_window = ma_window_search(init_mlp_uni_reg(), val_metric="Root Mean Squared Error", X=X, y=y,
+                                     norm_type=bnorm_type, test_size=local_test_size, seq_len=bseq_len,
+                                     param_distr=search_params_distr)
     print(f"Best ma window for {ticker} is {bma_window}")
 
-    _, is_temporal = is_temporal_better(init_mlp_uni_reg(), X, y, "Root Mean Squared Error", bnorm_type,
-                                        local_test_size, bseq_len, search_params_distr)
+
+    _, is_temporal = is_temporal_better(init_mlp_uni_reg(), val_metric="Root Mean Squared Error", X=X, y=y,
+                                        norm_type=bnorm_type, test_size=local_test_size, seq_len=bseq_len,
+                                        param_distr=search_params_distr)
     print(f"Best split with is_temporal={is_temporal}")
 
 
