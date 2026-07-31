@@ -4,7 +4,7 @@ import numpy as np
 from scipy import stats
 from sklearn.neural_network import MLPRegressor
 
-from data.candles_tink import convert_datetime_api_format
+from data.candles_tink import convert_datetime2api_format
 from preproc.xy import NormType, split_seq_xy_pipe, get_candles_xy, denoise_xy_features_wma, split_xy_to_sequences, normalize_sequence_uni
 from model.mlp import init_mlp_uni_reg, train_mlp_uni_reg, calc_metrics_mlp_uni_reg, log_metrics, predict_next_prices
 from constants import FROM_ISO, TO_ISO, YDEX_TICKER, RANDOM_STATE, CV_FOLDS, TEST_SIZE, TS_MIN_SEQUENCE_LEN, TS_MAX_SEQUENCE_LEN
@@ -158,8 +158,8 @@ def main():
 
     local_test_size = 0.25
     ticker = YDEX_TICKER
-    from_iso = convert_datetime_api_format(datetime.fromisoformat(FROM_ISO))
-    to_iso = convert_datetime_api_format(datetime.fromisoformat(TO_ISO))
+    from_iso = convert_datetime2api_format(datetime.fromisoformat(FROM_ISO))
+    to_iso = convert_datetime2api_format(datetime.fromisoformat(TO_ISO))
     X, y = get_candles_xy(from_iso, to_iso, ticker, to_cache=True)
     val_metric = "Correct Price Direction Percentage"
     more_better = True

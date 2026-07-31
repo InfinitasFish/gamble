@@ -11,6 +11,7 @@ EODHD_API_TOKEN = os.environ["EODHD_API_TOKEN"]
 
 # she bounces on my root until I peak
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
+MAX_WORKERS = 4
 
 # models
 CANDLES_MULTI_TRAINING_FEATURES = ["open", "close", "high", "low"]

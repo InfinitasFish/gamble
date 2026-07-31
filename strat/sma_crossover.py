@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import vectorbt as vbt
 
-from data.candles_tink import get_candles_data, get_tcandles_df, convert_datetime_api_format
+from data.candles_tink import get_candles_data, get_tcandles_df, convert_datetime2api_format
 from data.candles_eodhd import download_symbol_candles
 from strat import SignalStrategyInterface
 from constants import CACHE_DIR_FPATH, FROM_ISO, TO_ISO, EODHD_API_TOKEN, YDEX_TICKER, TINK_INTERVALS
@@ -20,8 +20,8 @@ class SMACrossover(SignalStrategyInterface):
         self.interval = interval
 
     def train(self, from_iso: str, to_iso:str, interval: str, to_cache: bool=False, cache_fpath: str=CACHE_DIR_FPATH) -> pd.DataFrame:
-        from_utc = convert_datetime_api_format(datetime.fromisoformat(from_iso))
-        to_utc = convert_datetime_api_format(datetime.fromisoformat(to_iso))
+        from_utc = convert_datetime2api_format(datetime.fromisoformat(from_iso))
+        to_utc = convert_datetime2api_format(datetime.fromisoformat(to_iso))
         candles_data = get_candles_data(from_utc, to_utc, self.ticker, interval, cache_fpath, to_cache)
         candles_df = get_tcandles_df(candles_data)
         prices = candles_df["close"]

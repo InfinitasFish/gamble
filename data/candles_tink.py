@@ -1,4 +1,5 @@
 import http.client
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 import json
@@ -6,23 +7,44 @@ import os
 from typing import Dict, Optional, List
 import pandas as pd
 
-from constants import REST_API_DOMAIN, READ_ONLY_TOKEN, GET_CANDLES_REST, YDEX_TICKER, CACHE_DIR_FPATH, INTERVAL_TO_MAX_PERIOD
+from constants import (MAX_WORKERS, REST_API_DOMAIN, READ_ONLY_TOKEN, GET_CANDLES_REST, YDEX_TICKER, CACHE_DIR_FPATH,
+                       INTERVAL_TO_MAX_PERIOD)
 
+
+# def split_time_period(from_iso: str, to_iso: str, max_delta: int) -> List[str]:
+#     from_date = datetime.fromisoformat(from_iso)
+#     to_date = datetime.fromisoformat(to_iso)
+#     diff = to_date - from_date
+#     split_periods = [from_iso]
+#     num_periods = diff.days // max_delta + 1
+#
+#     for i in range(num_periods):
+#         if i + 1 != num_periods:
+#             p = from_date + timedelta(days=max_delta * (i + 1))
+#         else:
+#             tail = diff.days - max_delta * i
+#             p = from_date + timedelta(days=max_delta * i + tail)
+#         split_periods.append(p.isoformat())
+#
+#     return split_periods
 
 def split_time_period(from_iso: str, to_iso: str, max_delta: int) -> List[str]:
     from_date = datetime.fromisoformat(from_iso)
     to_date = datetime.fromisoformat(to_iso)
     diff = to_date - from_date
-    split_periods = [from_iso]
-    num_periods = diff.days // max_delta + 1
+
+    if diff <= timedelta(days=0) or max_delta <= 0:
+        raise ValueError("to_date is less or equal than to_date")
+
+    split_periods = [datetime.fromisoformat(from_iso).isoformat()]
+    num_periods = diff.days // max_delta
 
     for i in range(num_periods):
-        if i + 1 != num_periods:
-            p = from_date + timedelta(days=max_delta * (i + 1))
-        else:
-            tail = diff.days - max_delta * i
-            p = from_date + timedelta(days=max_delta * i + tail)
+        p = from_date + timedelta(days=max_delta * (i + 1))
         split_periods.append(p.isoformat())
+
+    if diff.days % max_delta != 0:
+        split_periods.append(datetime.fromisoformat(to_iso).isoformat())
 
     return split_periods
 
@@ -30,8 +52,7 @@ def split_time_period(from_iso: str, to_iso: str, max_delta: int) -> List[str]:
 # https://developer.tbank.ru/invest/api/market-data-service-get-candles
 # check this out https://tinkoff.github.io/investAPI/load_history/
 # make consecutive request for small intervals with big time periods, collect all the data
-# TODO: implement parallel requesting with mutex
-def get_candles_data_consecutive(from_iso: str, to_iso: str, instrument_id: str, interval: str="CANDLE_INTERVAL_DAY",
+async def get_candles_data_consecutive(from_iso: str, to_iso: str, instrument_id: str, interval: str="CANDLE_INTERVAL_DAY",
                                  cache_fpath: str=CACHE_DIR_FPATH, to_cache: bool=False) -> dict:
 
     interval_short = map_api_interval_short(interval)
@@ -76,8 +97,8 @@ def get_candles_data_consecutive(from_iso: str, to_iso: str, instrument_id: str,
 
 def get_candles_single_request(from_iso: str, to_iso: str, instrument_id: str,
                                interval: str="CANDLE_INTERVAL_DAY") -> dict:
-    from_utc = convert_datetime_api_format(datetime.fromisoformat(from_iso))
-    to_utc = convert_datetime_api_format(datetime.fromisoformat(to_iso))
+    from_utc = convert_datetime2api_format(datetime.fromisoformat(from_iso))
+    to_utc = convert_datetime2api_format(datetime.fromisoformat(to_iso))
 
     # make request
     connection = http.client.HTTPSConnection(REST_API_DOMAIN)
@@ -154,7 +175,7 @@ def try_load_cache_dict(file_path: str, test_key: str) -> Optional[Dict]:
             return None
 
 
-def convert_datetime_api_format(date_time: datetime) -> str:
+def convert_datetime2api_format(date_time: datetime) -> str:
     # target is like "2026-03-02T09:15:19.971Z"
     return date_time.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + 'Z'
 

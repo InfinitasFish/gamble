@@ -4,7 +4,7 @@ from scipy import stats
 import numpy as np
 
 from constants import YDEX_TICKER, FROM_ISO, TO_ISO
-from data.candles_tink import convert_datetime_api_format
+from data.candles_tink import convert_datetime2api_format
 from model.mlp import (init_mlp_uni_reg, predict_next_prices, train_mlp_uni_reg, calc_metrics_mlp_uni_reg,
                        calc_metrics_for_predictions, log_metrics)
 from preproc.xy import get_candles_xy, split_xy_to_sequences, split_seq_xy_pipe, normalize_sequence_uni, NormType, denoise_xy_features_wma
@@ -28,8 +28,8 @@ parser.add_argument("--verbose", type=int, nargs='?', default=1, help="Set verbo
 def main():
     args = parser.parse_args()
     ticker = args.ticker.upper()
-    from_utc = convert_datetime_api_format(datetime.fromisoformat(args.from_iso))
-    to_utc = convert_datetime_api_format(datetime.fromisoformat(args.to_iso))
+    from_utc = convert_datetime2api_format(datetime.fromisoformat(args.from_iso))
+    to_utc = convert_datetime2api_format(datetime.fromisoformat(args.to_iso))
     seq_len = args.seq_len
     match args.norm_type:
         case "none": norm_type = NormType.NoNorm

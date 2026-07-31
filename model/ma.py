@@ -95,12 +95,12 @@ def plot_ma_for_timeseries(ts_data: np.ndarray | pd.Series, window: int=TS_MIN_S
 
 if __name__ == "__main__":
     from datetime import datetime
-    from data.candles_tink import convert_datetime_api_format
+    from data.candles_tink import convert_datetime2api_format
     from preproc.xy import get_candles_xy
     from constants import YDEX_TICKER, CANDLES_UNI_TARGET_FEATURE
 
-    from_iso = convert_datetime_api_format(datetime.fromisoformat("2024-01-01"))
-    to_iso = convert_datetime_api_format(datetime.fromisoformat("2026-01-01"))
+    from_iso = convert_datetime2api_format(datetime.fromisoformat("2024-01-01"))
+    to_iso = convert_datetime2api_format(datetime.fromisoformat("2026-01-01"))
     X, y = get_candles_xy(from_iso, to_iso, YDEX_TICKER, target_features=CANDLES_UNI_TARGET_FEATURE, to_cache=True)
     y = y.reshape(-1)
 
