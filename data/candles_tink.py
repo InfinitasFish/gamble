@@ -1,6 +1,7 @@
 import http.client
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone, timedelta
+from time import perf_counter
 from collections import defaultdict
 import json
 import os
@@ -8,25 +9,8 @@ from typing import Dict, Optional, List
 import pandas as pd
 
 from constants import (MAX_WORKERS, REST_API_DOMAIN, READ_ONLY_TOKEN, GET_CANDLES_REST, YDEX_TICKER, CACHE_DIR_FPATH,
-                       INTERVAL_TO_MAX_PERIOD)
+                       INTERVAL_TO_MAX_PERIOD, TINK_TIME_PERIODS_IN_DAYS)
 
-
-# def split_time_period(from_iso: str, to_iso: str, max_delta: int) -> List[str]:
-#     from_date = datetime.fromisoformat(from_iso)
-#     to_date = datetime.fromisoformat(to_iso)
-#     diff = to_date - from_date
-#     split_periods = [from_iso]
-#     num_periods = diff.days // max_delta + 1
-#
-#     for i in range(num_periods):
-#         if i + 1 != num_periods:
-#             p = from_date + timedelta(days=max_delta * (i + 1))
-#         else:
-#             tail = diff.days - max_delta * i
-#             p = from_date + timedelta(days=max_delta * i + tail)
-#         split_periods.append(p.isoformat())
-#
-#     return split_periods
 
 def split_time_period(from_iso: str, to_iso: str, max_delta: int) -> List[str]:
     from_date = datetime.fromisoformat(from_iso)
@@ -52,12 +36,12 @@ def split_time_period(from_iso: str, to_iso: str, max_delta: int) -> List[str]:
 # https://developer.tbank.ru/invest/api/market-data-service-get-candles
 # check this out https://tinkoff.github.io/investAPI/load_history/
 # make consecutive request for small intervals with big time periods, collect all the data
-async def get_candles_data_consecutive(from_iso: str, to_iso: str, instrument_id: str, interval: str="CANDLE_INTERVAL_DAY",
+def get_candles_data_consecutive(from_iso: str, to_iso: str, instrument_id: str, interval: str="CANDLE_INTERVAL_DAY",
                                  cache_fpath: str=CACHE_DIR_FPATH, to_cache: bool=False) -> dict:
 
     interval_short = map_api_interval_short(interval)
-    save_data_fpath = f"{instrument_id}_{from_iso}_{to_iso}_{interval_short}.json".replace(':', '').replace(
-        '-', '_')
+    save_data_fpath = (f"{instrument_id}_{from_iso.split('T')[0]}_{to_iso.split('T')[0]}_{interval_short}.json"
+        .replace(':', '').replace('-', '_'))
     save_data_fpath = os.path.join(cache_fpath, save_data_fpath)
 
     # search in cache
@@ -67,19 +51,20 @@ async def get_candles_data_consecutive(from_iso: str, to_iso: str, instrument_id
 
     max_time_delta = INTERVAL_TO_MAX_PERIOD[interval]
     joined_json_dict = {"candles": []}
-    # have to make consecutive reqs
+    # make consecutive reqs concurrently
     if (datetime.fromisoformat(to_iso) - datetime.fromisoformat(from_iso)) > max_time_delta:
         split_periods = split_time_period(from_iso, to_iso, max_time_delta.days)
+        tasks = [(split_periods[i - 1], split_periods[i], instrument_id, interval) for i in range(1, len(split_periods))]
 
-        for i in range(1, len(split_periods)):
-            from_period = split_periods[i - 1]
-            to_period = split_periods[i]
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            futures = [executor.submit(get_candles_single_request, *t) for t in tasks]
+            results = [f.result() for f in futures]
 
-            period_candle_dict = get_candles_single_request(from_period, to_period, instrument_id, interval)
-            if "candles" not in period_candle_dict:
-                raise ValueError(f"Unknown response format: {period_candle_dict}")
+        for r in results:
+            if "candles" not in r:
+                raise ValueError(f"Unknown response format: {r}")
+            joined_json_dict["candles"].extend(r["candles"])
 
-            joined_json_dict["candles"].extend(period_candle_dict["candles"])
     # make single request
     else:
         period_candle_dict = get_candles_single_request(from_iso, to_iso, instrument_id, interval)
@@ -181,9 +166,16 @@ def convert_datetime2api_format(date_time: datetime) -> str:
 
 
 if __name__ == "__main__":
+    n = 100
+    interval = "CANDLE_INTERVAL_10_MIN"
+    max_delta = INTERVAL_TO_MAX_PERIOD[interval]
     now = datetime.now().isoformat()
-    ten_days_ago = (datetime.now() - timedelta(days=10)).isoformat()
+    n_days_ago = (datetime.now() - timedelta(days=n)).isoformat()
+    num_reqs = (datetime.fromisoformat(now) - datetime.fromisoformat(n_days_ago)) // max_delta
 
-    ydex_candle_data = get_candles_data(ten_days_ago, now, YDEX_TICKER, to_cache=True)
+    s = perf_counter()
+    ydex_candle_data = get_candles_data_consecutive(n_days_ago, now, YDEX_TICKER, interval, to_cache=True)
     ydex_candle_df = get_tcandles_df(ydex_candle_data)
+    e = perf_counter()
+    print(f"{num_reqs} requests done in {e - s:.4f} s.")
     print(ydex_candle_df.head())
