@@ -6,7 +6,7 @@ from sklearn.neural_network import MLPRegressor
 
 from data.candles_tink import convert_datetime2api_format
 from preproc.xy import NormType, split_seq_xy_pipe, get_candles_xy, denoise_xy_features_wma, split_xy_to_sequences, normalize_sequence_uni
-from model.mlp import init_mlp_uni_reg, train_mlp_uni_reg, calc_metrics_mlp_uni_reg, log_metrics, predict_next_prices
+from experimental.mlp.mlp_model import init_mlp_uni_reg, train_mlp_uni_reg, calc_metrics_mlp_uni_reg, log_metrics, predict_next_prices
 from constants import FROM_ISO, TO_ISO, YDEX_TICKER, RANDOM_STATE, CV_FOLDS, TEST_SIZE, TS_MIN_SEQUENCE_LEN, TS_MAX_SEQUENCE_LEN
 
 
@@ -142,7 +142,7 @@ def is_temporal_better(init_mlp_reg: MLPRegressor, val_metric: str, more_better:
 
 
 def main():
-    # search all non-model hyperparameters, while using the best parameter in consecutive search.
+    # search all non-experimental hyperparameters, while using the best parameter in consecutive search.
     # search is naive because we assume that best parameter on first step will contribute to the best quality
     # on the next step
 

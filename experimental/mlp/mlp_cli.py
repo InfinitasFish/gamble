@@ -5,24 +5,24 @@ import numpy as np
 
 from constants import YDEX_TICKER, FROM_ISO, TO_ISO
 from data.candles_tink import convert_datetime2api_format
-from model.mlp import (init_mlp_uni_reg, predict_next_prices, train_mlp_uni_reg, calc_metrics_mlp_uni_reg,
-                       calc_metrics_for_predictions, log_metrics)
+from experimental.mlp.mlp_model import (init_mlp_uni_reg, predict_next_prices, train_mlp_uni_reg, calc_metrics_mlp_uni_reg,
+                                        calc_metrics_for_predictions, log_metrics)
 from preproc.xy import get_candles_xy, split_xy_to_sequences, split_seq_xy_pipe, normalize_sequence_uni, NormType, denoise_xy_features_wma
 
 
 parser = argparse.ArgumentParser()
 # no '--' means positional argument
-parser.add_argument("--ticker", type=str, nargs='?', default=YDEX_TICKER, help="Instrument's ticker on which model will be trained")
+parser.add_argument("--ticker", type=str, nargs='?', default=YDEX_TICKER, help="Instrument's ticker on which experimental will be trained")
 parser.add_argument("--from_iso", type=str, nargs='?', default=FROM_ISO, help="Date to take candles data from (iso format)")
 parser.add_argument("--to_iso", type=str, nargs='?', default=TO_ISO, help="Date to take candles data up to (iso format)")
 parser.add_argument("--seq_len", type=int, nargs='?', default=2, help="Number of candles to train and predict the next value on")
-parser.add_argument("--norm_type", choices=["none", "minmax", "standardize"], nargs='?', default="standardize", help="Type of data normalization for training a model")
+parser.add_argument("--norm_type", choices=["none", "minmax", "standardize"], nargs='?', default="standardize", help="Type of data normalization for training a experimental")
 # --no_scale_y / --no_temporal will be parsed as False
-parser.add_argument("--scale_y", action=argparse.BooleanOptionalAction, default=False, help="Enable target normalization for training a model")
+parser.add_argument("--scale_y", action=argparse.BooleanOptionalAction, default=False, help="Enable target normalization for training a experimental")
 # parser.add_argument("--temporal", action=argparse.BooleanOptionalAction, help="Enable temporal data splitting")
 parser.add_argument("--ma_window", type=int, nargs='?', default=0, help="Denoise data features with exp moving averages with window N")
-parser.add_argument("--val_metric", type=str, nargs='?', default="Root Mean Squared Error", help="Metric for selecting the best model")
-parser.add_argument("--verbose", type=int, nargs='?', default=1, help="Set verbosity for training a model")
+parser.add_argument("--val_metric", type=str, nargs='?', default="Root Mean Squared Error", help="Metric for selecting the best experimental")
+parser.add_argument("--verbose", type=int, nargs='?', default=1, help="Set verbosity for training a experimental")
 
 
 def main():
@@ -66,7 +66,7 @@ def main():
     metrics = calc_metrics_mlp_uni_reg(mlp_reg, X_test, y_test, y_scaler)
     log_metrics(metrics, "test")
 
-    # comparing with naive model
+    # comparing with naive experimental
     naive_preds = np.array([np.mean(y_train) for _ in range(y_test.shape[0])])
     metrics = calc_metrics_for_predictions(naive_preds, y_test)
     log_metrics(metrics, "test naive")

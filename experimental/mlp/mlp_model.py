@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 from sklearn.base import TransformerMixin
 from sklearn.experimental import enable_halving_search_cv
-# after scaling targets model converges without warnings
+# after scaling targets experimental converges without warnings
 # from sklearn.exceptions import ConvergenceWarning
 # warnings.filterwarnings("ignore", category=ConvergenceWarning)
 from sklearn.neural_network import MLPRegressor
@@ -34,7 +34,7 @@ def train_mlp_uni_reg(mlp_reg: MLPRegressor, X_train: np.ndarray, y_train: np.nd
     else:
         # HalvingRandomSearchCV iteratively increases the resource (data n_samples by default) to fit with CV
         #   while also decreases the amount of candidates at each step
-        # with 'refit' returns instance of model fitted with best params
+        # with 'refit' returns instance of experimental fitted with best params
         ts_cv = TimeSeriesSplit(n_splits=cv)
         search = HalvingRandomSearchCV(mlp_reg, param_distributions=param_distr, n_candidates="exhaust", factor=1.5, refit=True,
                                        scoring="neg_root_mean_squared_error", cv=ts_cv, random_state=random_state, n_jobs=2, verbose=verbose,
@@ -44,7 +44,7 @@ def train_mlp_uni_reg(mlp_reg: MLPRegressor, X_train: np.ndarray, y_train: np.nd
 
 def fit_mlp_uni_reg(mlp_reg: MLPRegressor, X: np.ndarray, y: np.ndarray, seq_len: int, norm_type: NormType=NormType.NoNorm,
                     scale_y: bool=True) -> Tuple[MLPRegressor, TransformerMixin, TransformerMixin]:
-    """Fit the best trained model on all data for future predictions"""
+    """Fit the best trained experimental on all data for future predictions"""
 
     X, y, X_scaler, y_scaler = normalize_sequence_uni(X, y, norm_type, scale_y)
     X, y = split_xy_to_sequences(X, y, seq_len)
@@ -55,7 +55,7 @@ def fit_mlp_uni_reg(mlp_reg: MLPRegressor, X: np.ndarray, y: np.ndarray, seq_len
 
 
 def predict_next_prices(mlp_reg: MLPRegressor, X: np.ndarray, seq_len: int, y_scaler: TransformerMixin=None) -> np.ndarray:
-    """Predict next price with fit model and its sequence len"""
+    """Predict next price with fit experimental and its sequence len"""
     if X.shape[0] < seq_len:
         raise ValueError(f"Need a sequence with len >={seq_len} for prediction")
     if (y_scaler is not None) and (not hasattr(y_scaler, "transform")):

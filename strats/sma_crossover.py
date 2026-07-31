@@ -7,7 +7,7 @@ import vectorbt as vbt
 
 from data.candles_tink import get_candles_data, get_tcandles_df, convert_datetime2api_format
 from data.candles_eodhd import download_symbol_candles
-from strat import SignalStrategyInterface
+from strats import SignalStrategyInterface
 from constants import CACHE_DIR_FPATH, FROM_ISO, TO_ISO, EODHD_API_TOKEN, YDEX_TICKER, TINK_INTERVALS
 
 

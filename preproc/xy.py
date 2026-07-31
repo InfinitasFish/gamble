@@ -6,7 +6,7 @@ from sklearn.base import TransformerMixin
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import train_test_split
 
-from model.ma import get_exponential_moving_average
+from strats.ma import get_exponential_moving_average
 from constants import TS_MAX_SEQUENCE_LEN, CACHE_DIR_FPATH, CANDLES_MULTI_TRAINING_FEATURES, CANDLES_UNI_TARGET_FEATURE, \
     TEST_SIZE, RANDOM_STATE, TS_MIN_SEQUENCE_LEN
 from data.candles_tink import get_candles_data_consecutive, get_tcandles_df
