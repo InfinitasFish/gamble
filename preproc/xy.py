@@ -80,11 +80,12 @@ def target_log_transform(feature_col: pd.Series) -> pd.Series:
     transformed = np.log(feature_col.shift(-1) / feature_col)
     return transformed
 
-def get_candles_xy(from_utc: str, to_utc: str, instrument_id: str, interval: str= "CANDLE_INTERVAL_DAY",
+
+def get_candles_xy(from_iso: str, to_iso: str, instrument_id: str, interval: str= "CANDLE_INTERVAL_DAY",
                    train_features: list=CANDLES_MULTI_TRAINING_FEATURES, target_features: list=CANDLES_UNI_TARGET_FEATURE,
                    cache_fpath: str=CACHE_DIR_FPATH, to_cache: bool=False) -> Tuple[np.ndarray, np.ndarray]:
 
-    candles_data = get_candles_data_consecutive(from_utc, to_utc, instrument_id, interval, cache_fpath, to_cache)
+    candles_data = get_candles_data_consecutive(from_iso, to_iso, instrument_id, interval, cache_fpath, to_cache)
     candles_df = get_tcandles_df(candles_data, train_features)
 
     target_features_df = []

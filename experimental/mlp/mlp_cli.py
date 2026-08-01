@@ -28,8 +28,8 @@ parser.add_argument("--verbose", type=int, nargs='?', default=1, help="Set verbo
 def main():
     args = parser.parse_args()
     ticker = args.ticker.upper()
-    from_utc = convert_datetime2api_format(datetime.fromisoformat(args.from_iso))
-    to_utc = convert_datetime2api_format(datetime.fromisoformat(args.to_iso))
+    from_iso = datetime.fromisoformat(args.from_iso).isoformat()
+    to_iso = datetime.fromisoformat(args.to_iso).isoformat()
     seq_len = args.seq_len
     match args.norm_type:
         case "none": norm_type = NormType.NoNorm
@@ -51,7 +51,7 @@ def main():
                            "max_iter": stats.randint(2000, 4000)}
 
     local_test_size = 0.25
-    X, y = get_candles_xy(from_utc, to_utc, ticker, to_cache=True)
+    X, y = get_candles_xy(from_iso, to_iso, ticker, to_cache=True)
     if ma_window > 0:
         X, _ = denoise_xy_features_wma(X, window=ma_window)
 
@@ -66,7 +66,7 @@ def main():
     metrics = calc_metrics_mlp_uni_reg(mlp_reg, X_test, y_test, y_scaler)
     log_metrics(metrics, "test")
 
-    # comparing with naive experimental
+    # comparing with naive model
     naive_preds = np.array([np.mean(y_train) for _ in range(y_test.shape[0])])
     metrics = calc_metrics_for_predictions(naive_preds, y_test)
     log_metrics(metrics, "test naive")

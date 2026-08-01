@@ -73,7 +73,7 @@ def get_candles_data_consecutive(from_iso: str, to_iso: str, instrument_id: str,
 
         joined_json_dict["candles"].extend(period_candle_dict["candles"])
 
-    if to_cache and not os.path.exists(save_data_fpath):
+    if to_cache:
         with open(save_data_fpath, 'w', encoding="utf-8") as f:
             json.dump(joined_json_dict, f)
 
