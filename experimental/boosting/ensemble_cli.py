@@ -1,3 +1,5 @@
+import argparse
+from datetime import datetime
 import numpy as np
 from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
@@ -7,6 +9,27 @@ from experimental.mlp.mlp_model import log_metrics, calc_metrics_for_predictions
 from preproc.xy import split_seq_xy_pipe, get_candles_xy, NormType
 from constants import YDEX_TICKER, FROM_ISO, TO_ISO
 
+
+parser = argparse.ArgumentParser()
+# no '--' means positional argument
+parser.add_argument("--from_iso", type=str, nargs='?', default=FROM_ISO, help="Date to take candles data from (iso format)")
+parser.add_argument("--to_iso", type=str, nargs='?', default=TO_ISO, help="Date to take candles data up to (iso format)")
+parser.add_argument("--ticker", type=str, nargs='?', default=YDEX_TICKER, help="Instrument's ticker on which experimental will be trained")
+parser.add_argument("--interval", choices=TINK_INTERVALS, default="CANDLE_INTERVAL_DAY", help="Time interval for a candle to train on")
+parser.add_argument("--seq_len", type=int, nargs='?', default=2, help="Number of candles to train and predict the next value on")
+parser.add_argument("--norm_type", choices=["none", "minmax", "standardize"], nargs='?', default="standardize", help="Type of data normalization for training a experimental")
+parser.add_argument("--scale_y", action=argparse.BooleanOptionalAction, default=False, help="Enable target normalization for training a experimental")
+parser.add_argument("--ma_window", type=int, nargs='?', default=0, help="Denoise data features with exp moving averages with window N")
+parser.add_argument("--val_metric", type=str, nargs='?', default="Root Mean Squared Error", help="Metric for selecting the best experimental")
+parser.add_argument("--verbose", type=int, nargs='?', default=1, help="Set verbosity for training a experimental")
+
+
+def main():
+    args = parser.parse_args()
+    ticker = args.ticker.upper()
+    from_iso = datetime.fromisoformat(args.from_iso).isoformat()
+    to_iso = datetime.fromisoformat(args.to_iso).isoformat()
+    seq_len = args.seq_len
 
 if __name__ == "__main__":
     from_iso = FROM_ISO

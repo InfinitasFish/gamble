@@ -158,9 +158,10 @@ def main():
 
     local_test_size = 0.25
     ticker = YDEX_TICKER
+    interval = "CANDLE_INTERVAL_DAY"
     from_iso = convert_datetime2api_format(datetime.fromisoformat(FROM_ISO))
     to_iso = convert_datetime2api_format(datetime.fromisoformat(TO_ISO))
-    X, y = get_candles_xy(from_iso, to_iso, ticker, to_cache=True)
+    X, y = get_candles_xy(from_iso, to_iso, ticker, interval=interval, to_cache=True)
     val_metric = "Correct Price Direction Percentage"
     more_better = True
     print(X.shape, y.shape)
