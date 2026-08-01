@@ -6,7 +6,7 @@ from datetime import datetime
 from scipy import stats
 import numpy as np
 
-from constants import YDEX_TICKER, FROM_ISO, TO_ISO, TINK_INTERVALS
+from constants import YDEX_TICKER, FROM_ISO, TO_ISO, TINK_INTERVALS, REG_METRICS_USER, REG_METRICS_TO_SKLEARN
 from experimental.mlp.mlp_model import (init_mlp_uni_reg, predict_next_prices, train_mlp_uni_reg, calc_metrics_mlp_uni_reg,
                                         calc_metrics_for_predictions, log_metrics)
 from preproc.xy import get_candles_xy, split_xy_to_sequences, split_seq_xy_pipe, normalize_sequence_uni, NormType, denoise_xy_features_wma
@@ -22,7 +22,7 @@ parser.add_argument("--seq_len", type=int, nargs='?', default=2, help="Number of
 parser.add_argument("--norm_type", choices=["none", "minmax", "standardize"], nargs='?', default="standardize", help="Type of data normalization for training a experimental")
 parser.add_argument("--scale_y", action=argparse.BooleanOptionalAction, default=False, help="Enable target normalization for training a experimental")
 parser.add_argument("--ma_window", type=int, nargs='?', default=0, help="Denoise data features with exp moving averages with window N")
-parser.add_argument("--val_metric", type=str, nargs='?', default="Root Mean Squared Error", help="Metric for selecting the best experimental")
+parser.add_argument("--val_metric", choices=REG_METRICS_USER, default="Root Mean Squared Error", help="Metric for selecting the best experimental")
 parser.add_argument("--verbose", type=int, nargs='?', default=1, help="Set verbosity for training a experimental")
 
 
@@ -41,6 +41,7 @@ def main():
     scale_y = args.scale_y
     ma_window = args.ma_window
     temporal = True
+    val_metric = REG_METRICS_TO_SKLEARN[args.val_metric]
     verbose = args.verbose
 
     search_params_distr = {"loss": ["squared_error"],
@@ -62,7 +63,7 @@ def main():
                                                                              norm_type=norm_type, scale_y=scale_y)
 
     # halving random cv search
-    mlp_reg = train_mlp_uni_reg(init_mlp_uni_reg(), X_train, y_train, search_params_distr, verbose=verbose)
+    mlp_reg = train_mlp_uni_reg(init_mlp_uni_reg(), X_train, y_train, search_params_distr, scoring=val_metric, verbose=verbose)
 
     # final test metrics on splits
     metrics = calc_metrics_mlp_uni_reg(mlp_reg, X_test, y_test, y_scaler)
@@ -80,8 +81,8 @@ def main():
     metrics = calc_metrics_mlp_uni_reg(mlp_reg, X, y, y_scaler)
     log_metrics(metrics, "full")
 
-    next_day_pred = predict_next_prices(mlp_reg, X, seq_len, y_scaler)[-1]
-    print(f"\nPredictions for the day after {args.to_iso} is {next_day_pred}")
+    next_interval_pred = predict_next_prices(mlp_reg, X, seq_len, y_scaler)[-1]
+    print(f"\nPredictions for the {interval} interval after {args.to_iso} is {next_interval_pred}")
 
 
 if __name__ == "__main__":

@@ -23,7 +23,8 @@ def init_mlp_uni_reg(max_iter: int=MAX_ITER, verbose: bool=False, random_state: 
 
 
 def train_mlp_uni_reg(mlp_reg: MLPRegressor, X_train: np.ndarray, y_train: np.ndarray, param_distr: dict=None,
-                      cv: int=CV_FOLDS, verbose: int=0, random_state: int=RANDOM_STATE) -> MLPRegressor:
+                      cv: int=CV_FOLDS, scoring: str="neg_root_mean_squared_error", verbose: int=0,
+                      random_state: int=RANDOM_STATE) -> MLPRegressor:
 
     if y_train.ndim == 2 and y_train.shape[1] == 1:
         y_train = y_train.reshape(-1)
@@ -37,7 +38,7 @@ def train_mlp_uni_reg(mlp_reg: MLPRegressor, X_train: np.ndarray, y_train: np.nd
         # with 'refit' returns instance of experimental fitted with best params
         ts_cv = TimeSeriesSplit(n_splits=cv)
         search = HalvingRandomSearchCV(mlp_reg, param_distributions=param_distr, n_candidates="exhaust", factor=1.5, refit=True,
-                                       scoring="neg_root_mean_squared_error", cv=ts_cv, random_state=random_state, n_jobs=2, verbose=verbose,
+                                       scoring=scoring, cv=ts_cv, random_state=random_state, n_jobs=2, verbose=verbose,
                                        ).fit(X_train, y_train)
         return search.best_estimator_
 
@@ -79,7 +80,7 @@ def log_metrics(metrics: Dict[str, float], split: str="train"):
         print(f"{metric}: {split} {value:.6f}")
 
 
-# TODO: calc errors variance, average daily return of a mlp
+# TODO: calc errors variance, average daily return of a mlp, remove MAPE (works poorly for log-profits), add Sharpe Ratio
 def calc_metrics_mlp_uni_reg(mlp_reg: MLPRegressor, X: np.ndarray, y: np.ndarray, y_scaler: TransformerMixin=None) -> Dict[str, float]:
 
     metrics = {}
