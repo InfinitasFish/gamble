@@ -48,14 +48,11 @@ def denoise_xy_features_wma(X: np.ndarray, y: np.ndarray=None, window: int=TS_MI
     return X_, None
 
 
-def split_expanding_window(X: np.ndarray, y: np.ndarray, seq_len: int, rolling_window: int,):
-    pass
-
 def split_seq_xy_pipe(X: np.ndarray, y: np.ndarray, seq_len: int, test_size: float=TEST_SIZE,
                       norm_type: NormType=NormType.NoNorm, scale_y: bool=True, random_state: int=RANDOM_STATE
                       ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, TransformerMixin, TransformerMixin]:
 
-    X_train, X_test, y_train, y_test = train_test_split_temporal(X, y, test_size=test_size)
+    X_train, X_test, y_train, y_test = train_test_split_thresh(X, y, test_size=test_size)
     X_train, X_test, y_train, y_test, X_scaler, y_scaler = normalize_splits_uni(X_train, X_test, y_train, y_test, norm_type, scale_y)
 
     # making n-len sequences after normalization
@@ -64,8 +61,8 @@ def split_seq_xy_pipe(X: np.ndarray, y: np.ndarray, seq_len: int, test_size: flo
     return X_train, X_test, y_train, y_test, X_scaler, y_scaler
 
 
-def train_test_split_temporal(X: np.ndarray, y: np.ndarray, test_size: float
-                              ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def train_test_split_thresh(X: np.ndarray, y: np.ndarray, test_size: float
+                            ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
 
     assert X.shape[0] == y.shape[0]
     train_idx_border = int(X.shape[0] * (1 - test_size))

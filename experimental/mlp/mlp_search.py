@@ -6,15 +6,15 @@ from sklearn.neural_network import MLPRegressor
 
 from data.candles_tink import convert_datetime2api_format
 from preproc.xy import NormType, split_seq_xy_pipe, get_candles_xy, denoise_xy_features_wma, split_xy_to_sequences, normalize_sequence_uni
-from experimental.mlp.mlp_model import init_mlp_uni_reg, train_mlp_uni_reg, calc_metrics_mlp_uni_reg, log_metrics, predict_next_prices
-from constants import (FROM_ISO, TO_ISO, YDEX_TICKER, RANDOM_STATE, CV_FOLDS, TEST_SIZE, TS_MIN_SEQUENCE_LEN,
+from experimental.mlp.mlp_model import init_mlp_uni_reg, inner_train_mlp_uni_reg, calc_metrics_mlp_uni_reg, log_metrics, predict_next_prices
+from constants import (FROM_ISO, TO_ISO, YDEX_TICKER, RANDOM_STATE, INNER_CV_FOLDS, TEST_SIZE, TS_MIN_SEQUENCE_LEN,
                        TS_MAX_SEQUENCE_LEN, REG_METRICS_TO_SKLEARN)
 
 
 
 def norm_type_search(init_mlp_reg: MLPRegressor, val_metric: str, more_better: bool, X: np.ndarray, y: np.ndarray,
                      test_size: float=TEST_SIZE, seq_len: int=TS_MIN_SEQUENCE_LEN, param_distr: dict=None,
-                     cv: int=CV_FOLDS, verbose: int=0, random_state: int=RANDOM_STATE,
+                     cv: int=INNER_CV_FOLDS, verbose: int=0, random_state: int=RANDOM_STATE,
                      ) -> Tuple[MLPRegressor, NormType]:
     """Training multiple MLP to find the best normalization type for prediction"""
 
@@ -25,7 +25,7 @@ def norm_type_search(init_mlp_reg: MLPRegressor, val_metric: str, more_better: b
     for norm_type in [NormType.NoNorm, NormType.Standardize, NormType.MinMax]:
         X_train, X_test, y_train, y_test, X_scaler, y_scaler = split_seq_xy_pipe(X, y, seq_len, test_size,
                                                                                  norm_type, scale_y=False)
-        trained_mlp_reg = train_mlp_uni_reg(init_mlp_reg, X_train, y_train, param_distr, cv, scoring, verbose, random_state)
+        trained_mlp_reg = inner_train_mlp_uni_reg(init_mlp_reg, X_train, y_train, param_distr, cv, scoring, verbose, random_state)
         target_error_metric = calc_metrics_mlp_uni_reg(trained_mlp_reg, X_test, y_test, y_scaler)[val_metric]
 
         if more_better:
@@ -46,7 +46,7 @@ def norm_type_search(init_mlp_reg: MLPRegressor, val_metric: str, more_better: b
 
 def seq_len_search(init_mlp_reg: MLPRegressor, val_metric: str, more_better: bool, X: np.ndarray, y: np.ndarray,
                    norm_type: NormType=NormType.NoNorm, test_size: float=TEST_SIZE, min_len: int=TS_MIN_SEQUENCE_LEN,
-                   max_len: int=TS_MAX_SEQUENCE_LEN, param_distr: dict=None, cv: int=CV_FOLDS, verbose: int=0,
+                   max_len: int=TS_MAX_SEQUENCE_LEN, param_distr: dict=None, cv: int=INNER_CV_FOLDS, verbose: int=0,
                    random_state: int=RANDOM_STATE,
                    ) -> Tuple[MLPRegressor, int]:
     """Training multiple MLP to find the best sequence length for prediction"""
@@ -59,8 +59,8 @@ def seq_len_search(init_mlp_reg: MLPRegressor, val_metric: str, more_better: boo
         X_train, X_test, y_train, y_test, X_scaler, y_scaler = split_seq_xy_pipe(X, y, seq_len, test_size,
                                                                                  norm_type, scale_y=False)
 
-        trained_mlp_reg = train_mlp_uni_reg(init_mlp_reg, X_train, y_train, param_distr, cv,
-                                            scoring, verbose, random_state)
+        trained_mlp_reg = inner_train_mlp_uni_reg(init_mlp_reg, X_train, y_train, param_distr, cv,
+                                                  scoring, verbose, random_state)
         target_error_metric = calc_metrics_mlp_uni_reg(trained_mlp_reg, X_test, y_test, y_scaler)[val_metric]
 
         if more_better:
@@ -81,7 +81,7 @@ def seq_len_search(init_mlp_reg: MLPRegressor, val_metric: str, more_better: boo
 
 def ma_window_search(init_mlp_reg: MLPRegressor, val_metric: str, more_better: bool, X: np.ndarray, y: np.ndarray,
                      norm_type: NormType, test_size: float=TEST_SIZE, seq_len: int=TS_MIN_SEQUENCE_LEN,
-                     param_distr: dict=None, max_ma_window: int=TS_MAX_SEQUENCE_LEN // 2, cv: int=CV_FOLDS, verbose: int=0,
+                     param_distr: dict=None, max_ma_window: int=TS_MAX_SEQUENCE_LEN // 2, cv: int=INNER_CV_FOLDS, verbose: int=0,
                      random_state: int=RANDOM_STATE,
                      ) -> Tuple[MLPRegressor, int]:
     """Training multiple MLP to find best moving average window for prediction"""
@@ -98,8 +98,8 @@ def ma_window_search(init_mlp_reg: MLPRegressor, val_metric: str, more_better: b
         X_train, X_test, y_train, y_test, X_scaler, y_scaler = split_seq_xy_pipe(X_ma, y, seq_len, test_size,
                                                                                  norm_type, scale_y=False)
 
-        trained_mlp_reg = train_mlp_uni_reg(init_mlp_reg, X_train, y_train, param_distr, cv,
-                                            scoring, verbose, random_state)
+        trained_mlp_reg = inner_train_mlp_uni_reg(init_mlp_reg, X_train, y_train, param_distr, cv,
+                                                  scoring, verbose, random_state)
         target_error_metric = calc_metrics_mlp_uni_reg(trained_mlp_reg, X_test, y_test, y_scaler)[val_metric]
 
         if more_better:

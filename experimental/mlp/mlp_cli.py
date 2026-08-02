@@ -8,7 +8,7 @@ from scipy import stats
 import numpy as np
 
 from constants import YDEX_TICKER, FROM_ISO, TO_ISO, TINK_INTERVALS, REG_METRICS_USER, REG_METRICS_TO_SKLEARN
-from experimental.mlp.mlp_model import (init_mlp_uni_reg, predict_next_prices, train_mlp_uni_reg, calc_metrics_mlp_uni_reg,
+from experimental.mlp.mlp_model import (init_mlp_uni_reg, predict_next_prices, inner_train_mlp_uni_reg, calc_metrics_mlp_uni_reg,
                                         calc_metrics_for_predictions, log_metrics)
 from preproc.xy import get_candles_xy, split_xy_to_sequences, split_seq_xy_pipe, normalize_sequence_uni, NormType, denoise_xy_features_wma
 
@@ -62,7 +62,7 @@ def main():
                                                                              norm_type=norm_type, scale_y=scale_y)
 
     # halving random cv search
-    mlp_reg = train_mlp_uni_reg(init_mlp_uni_reg(), X_train, y_train, search_params_distr, scoring=val_metric, verbose=verbose)
+    mlp_reg = inner_train_mlp_uni_reg(init_mlp_uni_reg(), X_train, y_train, search_params_distr, scoring=val_metric, verbose=verbose)
 
     # final test metrics on splits
     metrics = calc_metrics_mlp_uni_reg(mlp_reg, X_test, y_test, y_scaler)

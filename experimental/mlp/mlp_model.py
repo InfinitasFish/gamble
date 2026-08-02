@@ -10,8 +10,8 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.model_selection import HalvingRandomSearchCV, TimeSeriesSplit
 from sklearn.metrics import root_mean_squared_error, mean_absolute_error, median_absolute_error, mean_absolute_percentage_error, r2_score
 
-from preproc.xy import split_xy_to_sequences, normalize_sequence_uni, NormType
-from constants import RANDOM_STATE, MAX_ITER, CV_FOLDS
+from preproc.xy import split_xy_to_sequences, split_seq_xy_pipe, normalize_sequence_uni, NormType
+from constants import RANDOM_STATE, MAX_ITER, INNER_CV_FOLDS, OUTER_CV_FOLDS
 
 # TODO: there are specific mlp for timeseries, consider implementing, e.g. https://arxiv.org/pdf/2311.06184
 
@@ -22,9 +22,28 @@ def init_mlp_uni_reg(max_iter: int=MAX_ITER, verbose: bool=False, random_state: 
     return mlp_reg
 
 
-def train_mlp_uni_reg(mlp_reg: MLPRegressor, X_train: np.ndarray, y_train: np.ndarray, param_distr: dict=None,
-                      cv: int=CV_FOLDS, scoring: str="neg_root_mean_squared_error", verbose: int=0,
-                      random_state: int=RANDOM_STATE) -> MLPRegressor:
+# todo: nested cv would be perfect here - outer cv for train/test splitting, and inner cv for param tuning on train
+# average test metrics on outer splits - and get something very close to real test metrics
+# nested cv lets us to incorporate all the data in the single pipeline while avoding any biases on test metrics
+def outer_train_mlp_uni_reg(mlp_reg: MLPRegressor, X: np.ndarray, y: np.ndarray, param_distr: dict=None,
+                            outer_cv: int=OUTER_CV_FOLDS, inner_cv: int=INNER_CV_FOLDS,
+                            scoring: str="neg_root_mean_squared_error", verbose: int=0, random_state: int=RANDOM_STATE) -> MLPRegressor:
+
+    kfold = TimeSeriesSplit(n_splits=outer_cv)
+    for i , (train_index, test_index) in enumerate(kfold.split(X)):
+        print(f"Fold {i}:")
+        print(f"  Train: index={train_index}")
+        print(f"  Test:  index={test_index}")
+
+        X_train, X_test, y_train, y_test, X_scaler, y_scaler = X[train_index], X[test_index], y[train_index], y[test_index]
+        # gimme break
+        return
+
+
+
+def inner_train_mlp_uni_reg(mlp_reg: MLPRegressor, X_train: np.ndarray, y_train: np.ndarray, param_distr: dict=None,
+                            cv: int=INNER_CV_FOLDS, scoring: str= "neg_root_mean_squared_error", verbose: int=0,
+                            random_state: int=RANDOM_STATE) -> MLPRegressor:
 
     if y_train.ndim == 2 and y_train.shape[1] == 1:
         y_train = y_train.reshape(-1)
