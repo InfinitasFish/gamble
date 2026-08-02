@@ -1,3 +1,4 @@
+# without this `uv run` can't find constants module
 import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
@@ -41,7 +42,6 @@ def main():
         case _: raise ValueError("how")
     scale_y = args.scale_y
     ma_window = args.ma_window
-    temporal = True
     val_metric = REG_METRICS_TO_SKLEARN[args.val_metric]
     # verbose = args.verbose
 
@@ -51,7 +51,7 @@ def main():
     if ma_window > 0:
         X, _ = denoise_xy_features_wma(X, window=ma_window)
 
-    X_train, X_test, y_train, y_test, X_scaler, y_scaler = split_seq_xy_pipe(X, y, seq_len=seq_len, temporal=temporal,
+    X_train, X_test, y_train, y_test, X_scaler, y_scaler = split_seq_xy_pipe(X, y, seq_len=seq_len,
                                                                              test_size=local_test_size,
                                                                              norm_type=norm_type,
                                                                              scale_y=scale_y)

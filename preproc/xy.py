@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from sklearn.base import TransformerMixin
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, TimeSeriesSplit
 
 from strats.ma import get_exponential_moving_average
 from constants import TS_MAX_SEQUENCE_LEN, CACHE_DIR_FPATH, CANDLES_MULTI_TRAINING_FEATURES, CANDLES_UNI_TARGET_FEATURE, \
@@ -48,15 +48,14 @@ def denoise_xy_features_wma(X: np.ndarray, y: np.ndarray=None, window: int=TS_MI
     return X_, None
 
 
-def split_seq_xy_pipe(X: np.ndarray, y: np.ndarray, seq_len: int, temporal: bool=True, test_size: float=TEST_SIZE,
+def split_expanding_window(X: np.ndarray, y: np.ndarray, seq_len: int, rolling_window: int,):
+    pass
+
+def split_seq_xy_pipe(X: np.ndarray, y: np.ndarray, seq_len: int, test_size: float=TEST_SIZE,
                       norm_type: NormType=NormType.NoNorm, scale_y: bool=True, random_state: int=RANDOM_STATE
                       ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, TransformerMixin, TransformerMixin]:
 
-    if temporal:
-        X_train, X_test, y_train, y_test = train_test_split_temporal(X, y, test_size=test_size)
-    else:
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
-
+    X_train, X_test, y_train, y_test = train_test_split_temporal(X, y, test_size=test_size)
     X_train, X_test, y_train, y_test, X_scaler, y_scaler = normalize_splits_uni(X_train, X_test, y_train, y_test, norm_type, scale_y)
 
     # making n-len sequences after normalization
