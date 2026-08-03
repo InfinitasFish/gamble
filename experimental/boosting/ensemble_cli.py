@@ -10,10 +10,13 @@ from lightgbm import LGBMRegressor
 from sklearn.ensemble import ExtraTreesRegressor
 
 from experimental.mlp.mlp_model import log_metrics, calc_metrics_for_predictions
-from preproc.xy import split_seq_xy_pipe, get_candles_xy, NormType, denoise_xy_features_wma, normalize_sequence_uni, split_xy_to_sequences
+from experimental.boosting.params_distributions import xgb_param_distr, lgbm_param_distr, et_param_distr
+from experimental.boosting.ensemble_model import outer_train_gb, inner_train_gb
+from preproc.xy import get_candles_xy, NormType, normalize_sequence_uni, split_xy_to_sequences
 from constants import YDEX_TICKER, FROM_ISO, TO_ISO, TINK_INTERVALS, REG_METRICS_USER, REG_METRICS_TO_SKLEARN
 
 
+# todo: refactor this file pls
 parser = argparse.ArgumentParser()
 # no '--' means positional argument
 parser.add_argument("--from_iso", type=str, nargs='?', default=FROM_ISO, help="Date to take candles data from (iso format)")
@@ -45,53 +48,39 @@ def main():
     val_metric = REG_METRICS_TO_SKLEARN[args.val_metric]
     # verbose = args.verbose
 
-    # data prep
-    local_test_size = 0.25
     X, y = get_candles_xy(from_iso, to_iso, ticker, interval)
-    if ma_window > 0:
-        X, _ = denoise_xy_features_wma(X, window=ma_window)
-
-    X_train, X_test, y_train, y_test, X_scaler, y_scaler = split_seq_xy_pipe(X, y, seq_len=seq_len,
-                                                                             test_size=local_test_size,
-                                                                             norm_type=norm_type,
-                                                                             scale_y=scale_y)
-    print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
 
     # lightgbm grows leaf-by-leaf (unbalanced tree), xgb grows level-by-level (balanced tree),
     # so ensemble is solid no-brainer
     # todo: add metric selection
     models = {
-        "xgb": XGBRegressor(n_estimators=300, max_depth=5, learning_rate=0.05, subsample=0.8),
-        "lgbm": LGBMRegressor(n_estimators=300, num_leaves=31, learning_rate=0.05, min_child_samples=20),
-        "et": ExtraTreesRegressor(n_estimators=300, max_features="sqrt"),
+        "xgb": (XGBRegressor(n_estimators=300, max_depth=5, learning_rate=0.05, subsample=0.8), xgb_param_distr),
+        "lgbm": (LGBMRegressor(n_estimators=300, num_leaves=31, learning_rate=0.05, min_child_samples=20), lgbm_param_distr),
+        "et": (ExtraTreesRegressor(n_estimators=300, max_features="sqrt"), et_param_distr),
     }
 
+    for model, params in models.items():
+        # freeze on et
+        if model == "et": continue
+        model_metrics = outer_train_gb(params[0], X, y, param_distr=params[1])
+        log_metrics(model_metrics, f"{model} cv")
+
+    # refit on full data
     models_preds = {}
-    for name, model in models.items():
-        model.fit(X_train, y_train)
-        models_preds[name] = model.predict(X_test)
-
-    # as final forecast average models predictions
-    preds = np.mean([models_preds["xgb"], models_preds["lgbm"], models_preds["et"]], axis=0)
-    metrics = calc_metrics_for_predictions(preds, y_test)
-    log_metrics(metrics, "test ensemble")
-
-    # comparing with naive model
-    naive_preds = np.array([np.mean(y_train) for _ in range(y_test.shape[0])])
-    metrics = calc_metrics_for_predictions(naive_preds, y_test)
-    log_metrics(metrics, "test naive")
-
-    # full data fit, metrics
-    X, y, X_scaler, y_scaler = normalize_sequence_uni(X, y, norm_type, scale_y)
-    X, y = split_xy_to_sequences(X, y, seq_len)
-
-    models_preds = {}
-    for name, model in models.items():
-        model.fit(X, y)
-        models_preds[name] = model.predict(X)
+    for model, params in models.items():
+        if model == "et":
+            fit_model = params[0].fit(X, y)
+        else:
+            fit_model = inner_train_gb(params[0], X, y, params[1])
+        models_preds[model] = params[0].predict(X)
     preds = np.mean([models_preds["xgb"], models_preds["lgbm"], models_preds["et"]], axis=0)
     metrics = calc_metrics_for_predictions(preds, y)
-    log_metrics(metrics, "full ensemble")
+    log_metrics(metrics, "refit ensemble")
+
+    # comparing with naive model
+    naive_preds = np.array([np.mean(y) for _ in range(y.shape[0])])
+    metrics = calc_metrics_for_predictions(naive_preds, y)
+    log_metrics(metrics, "refit naive")
 
 
 if __name__ == "__main__":

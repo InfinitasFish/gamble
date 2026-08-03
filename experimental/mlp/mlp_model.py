@@ -29,11 +29,11 @@ def init_mlp_uni_reg(max_iter: int=MAX_ITER, verbose: bool=False, random_state: 
 def outer_train_mlp_uni_reg(X_cand: np.ndarray, y_cand: np.ndarray, seq_len: int, param_distr: dict=None,
                             outer_cv: int=OUTER_CV_FOLDS, inner_cv: int=INNER_CV_FOLDS, norm_type: NormType=NormType.NoNorm,
                             scale_y: bool=False, scoring: str="neg_root_mean_squared_error", verbose: int=0,
-                            random_state: int=RANDOM_STATE) -> dict[float]:
+                            random_state: int=RANDOM_STATE) -> dict[str, float]:
 
     kfold = TimeSeriesSplit(n_splits=outer_cv)
     test_metrics = defaultdict(list)
-    for i , (train_index, test_index) in enumerate(kfold.split(X_cand)):
+    for i, (train_index, test_index) in enumerate(kfold.split(X_cand)):
 
         X_train, X_test, y_train, y_test = X_cand[train_index], X_cand[test_index], y_cand[train_index], y_cand[test_index]
         X_train, X_test, y_train, y_test, X_scaler, y_scaler = normalize_splits_uni(X_train, X_test, y_train, y_test,
