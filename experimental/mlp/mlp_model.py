@@ -1,4 +1,5 @@
 from typing import Dict, Tuple
+from collections import defaultdict
 import warnings
 import numpy as np
 from sklearn.base import TransformerMixin
@@ -10,7 +11,7 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.model_selection import HalvingRandomSearchCV, TimeSeriesSplit
 from sklearn.metrics import root_mean_squared_error, mean_absolute_error, median_absolute_error, mean_absolute_percentage_error, r2_score
 
-from preproc.xy import split_xy_to_sequences, split_seq_xy_pipe, normalize_sequence_uni, NormType
+from preproc.xy import split_xy_to_sequences, split_seq_xy_pipe, normalize_sequence_uni, NormType, normalize_splits_uni
 from constants import RANDOM_STATE, MAX_ITER, INNER_CV_FOLDS, OUTER_CV_FOLDS
 
 # TODO: there are specific mlp for timeseries, consider implementing, e.g. https://arxiv.org/pdf/2311.06184
@@ -22,23 +23,37 @@ def init_mlp_uni_reg(max_iter: int=MAX_ITER, verbose: bool=False, random_state: 
     return mlp_reg
 
 
-# todo: nested cv would be perfect here - outer cv for train/test splitting, and inner cv for param tuning on train
+# nested cv would be good here - outer cv for train/test splitting, and inner cv for param tuning on train
 # average test metrics on outer splits - and get something very close to real test metrics
-# nested cv lets us to incorporate all the data in the single pipeline while avoding any biases on test metrics
-def outer_train_mlp_uni_reg(mlp_reg: MLPRegressor, X: np.ndarray, y: np.ndarray, param_distr: dict=None,
-                            outer_cv: int=OUTER_CV_FOLDS, inner_cv: int=INNER_CV_FOLDS,
-                            scoring: str="neg_root_mean_squared_error", verbose: int=0, random_state: int=RANDOM_STATE) -> MLPRegressor:
+# nested cv lets us incorporate all the data in the single pipeline while avoiding any biases on test metrics
+def outer_train_mlp_uni_reg(X_cand: np.ndarray, y_cand: np.ndarray, seq_len: int, param_distr: dict=None,
+                            outer_cv: int=OUTER_CV_FOLDS, inner_cv: int=INNER_CV_FOLDS, norm_type: NormType=NormType.NoNorm,
+                            scale_y: bool=False, scoring: str="neg_root_mean_squared_error", verbose: int=0,
+                            random_state: int=RANDOM_STATE) -> dict[float]:
 
     kfold = TimeSeriesSplit(n_splits=outer_cv)
-    for i , (train_index, test_index) in enumerate(kfold.split(X)):
-        print(f"Fold {i}:")
-        print(f"  Train: index={train_index}")
-        print(f"  Test:  index={test_index}")
+    test_metrics = defaultdict(list)
+    for i , (train_index, test_index) in enumerate(kfold.split(X_cand)):
 
-        X_train, X_test, y_train, y_test, X_scaler, y_scaler = X[train_index], X[test_index], y[train_index], y[test_index]
-        # gimme break
-        return
+        X_train, X_test, y_train, y_test = X_cand[train_index], X_cand[test_index], y_cand[train_index], y_cand[test_index]
+        X_train, X_test, y_train, y_test, X_scaler, y_scaler = normalize_splits_uni(X_train, X_test, y_train, y_test,
+                                                                                    norm_type, scale_y)
 
+        # making n-len sequences after normalization
+        X_train, y_train = split_xy_to_sequences(X_train, y_train, seq_len)
+        X_test, y_test = split_xy_to_sequences(X_test, y_test, seq_len)
+
+        mlp_i = inner_train_mlp_uni_reg(init_mlp_uni_reg(), X_train, y_train, param_distr,
+                                        inner_cv, scoring, verbose, random_state)
+        test_metrics_i = calc_metrics_mlp_uni_reg(mlp_i, X_test, y_test, y_scaler)
+        for k, v in test_metrics_i.items():
+            test_metrics[k].append(v)
+
+    # calculating average metrics on outer test splits
+    agg_metrics = {}
+    for k, v in test_metrics.items():
+        agg_metrics[k] = sum(v) / len(v)
+    return agg_metrics
 
 
 def inner_train_mlp_uni_reg(mlp_reg: MLPRegressor, X_train: np.ndarray, y_train: np.ndarray, param_distr: dict=None,
@@ -150,4 +165,3 @@ def calc_metrics_for_predictions(preds: np.ndarray, y: np.ndarray) -> Dict[str, 
     metrics["Correct Price Direction Percentage"] = correct_direction_percent
 
     return metrics
-

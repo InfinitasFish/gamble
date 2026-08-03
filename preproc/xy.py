@@ -121,7 +121,7 @@ def normalize_sequence_uni(X: np.ndarray, y: np.ndarray, norm_type: NormType=Nor
 
 
 def normalize_splits_uni(X_train: np.ndarray, X_test: np.ndarray, y_train: np.ndarray, y_test: np.ndarray,
-                         norm_type: NormType=NormType.NoNorm, scale_y: bool=True,
+                         norm_type: NormType=NormType.NoNorm, scale_y: bool=False,
                          ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, TransformerMixin, TransformerMixin]:
     
     X_scaler = None
