@@ -2,6 +2,7 @@
 import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
+from collections import defaultdict
 import argparse
 from datetime import datetime
 import numpy as np
@@ -59,11 +60,21 @@ def main():
         "et": (ExtraTreesRegressor(n_estimators=300, max_features="sqrt"), et_param_distr),
     }
 
+    # nested cv ensemble validation
+    models_metrics = {}
     for model, params in models.items():
         # freeze on et
         if model == "et": continue
         model_metrics = outer_train_gb(params[0], X, y, param_distr=params[1])
-        log_metrics(model_metrics, f"{model} cv")
+        models_metrics[model] = model_metrics
+
+    agg_metrics = defaultdict(float)
+    for k, v in models_metrics.items():
+        for metric, val in v.items():
+            agg_metrics[metric] += val
+    for k, v in agg_metrics.items():
+        agg_metrics[k] /= len(models_metrics.keys())
+    log_metrics(agg_metrics, "cv ensemble")
 
     # refit on full data
     models_preds = {}
@@ -72,7 +83,7 @@ def main():
             fit_model = params[0].fit(X, y)
         else:
             fit_model = inner_train_gb(params[0], X, y, params[1])
-        models_preds[model] = params[0].predict(X)
+        models_preds[model] = fit_model.predict(X)
     preds = np.mean([models_preds["xgb"], models_preds["lgbm"], models_preds["et"]], axis=0)
     metrics = calc_metrics_for_predictions(preds, y)
     log_metrics(metrics, "refit ensemble")
