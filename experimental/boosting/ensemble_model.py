@@ -1,5 +1,6 @@
 from collections import defaultdict
 from sklearn.base import RegressorMixin
+from sklearn.experimental import enable_halving_search_cv
 from sklearn.model_selection import TimeSeriesSplit, HalvingRandomSearchCV
 import numpy as np
 
