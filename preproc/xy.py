@@ -79,7 +79,8 @@ def target_log_transform(feature_col: pd.Series) -> pd.Series:
 
 def get_candles_xy(from_iso: str, to_iso: str, instrument_id: str, interval: str= "CANDLE_INTERVAL_DAY",
                    train_features: list=CANDLES_MULTI_TRAINING_FEATURES, target_features: list=CANDLES_UNI_TARGET_FEATURE,
-                   cache_fpath: str=CACHE_DIR_FPATH, to_cache: bool=False) -> Tuple[np.ndarray, np.ndarray]:
+                   log_transform: bool=True, cache_fpath: str=CACHE_DIR_FPATH, to_cache: bool=False
+                   ) -> Tuple[np.ndarray, np.ndarray]:
 
     candles_data = get_candles_data_consecutive(from_iso, to_iso, instrument_id, interval, cache_fpath, to_cache)
     candles_df = get_tcandles_df(candles_data, train_features)
@@ -87,7 +88,11 @@ def get_candles_xy(from_iso: str, to_iso: str, instrument_id: str, interval: str
     target_features_df = []
     for feature in target_features:
         target_features_df.append(f"target_{feature}")
-        candles_df[f"target_{feature}"] = target_log_transform(candles_df[feature])
+        if log_transform:
+            candles_df[f"target_{feature}"] = target_log_transform(candles_df[feature])
+        else:
+            candles_df[f"target_{feature}"] = candles_df[feature]
+
     candles_df = candles_df.dropna()
 
     X = np.array(candles_df[train_features])

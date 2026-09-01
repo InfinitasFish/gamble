@@ -5,7 +5,8 @@ import pandas as pd
 import numpy as np
 import vectorbt as vbt
 
-from data.candles_tink import get_candles_data, get_tcandles_df, convert_datetime2api_format
+from data.candles_tink import convert_datetime2api_format
+from preproc.xy import get_candles_xy
 from data.candles_eodhd import download_symbol_candles
 from strats import SignalStrategyInterface
 from constants import CACHE_DIR_FPATH, FROM_ISO, TO_ISO, EODHD_API_TOKEN, YDEX_TICKER, TINK_INTERVALS
@@ -20,11 +21,8 @@ class SMACrossover(SignalStrategyInterface):
         self.interval = interval
 
     def train(self, from_iso: str, to_iso:str, interval: str, to_cache: bool=False, cache_fpath: str=CACHE_DIR_FPATH) -> pd.DataFrame:
-        from_utc = convert_datetime2api_format(datetime.fromisoformat(from_iso))
-        to_utc = convert_datetime2api_format(datetime.fromisoformat(to_iso))
-        candles_data = get_candles_data(from_utc, to_utc, self.ticker, interval, cache_fpath, to_cache)
-        candles_df = get_tcandles_df(candles_data)
-        prices = candles_df["close"]
+        X, y = get_candles_xy(from_iso, to_iso, self.ticker, interval, log_transform=False, to_cache=to_cache, cache_fpath=cache_fpath)
+        prices = y.reshape(-1)
 
         fast_ma = vbt.MA.run(prices, self.fast_ma)
         slow_ma = vbt.MA.run(prices, self.slow_ma)
@@ -68,6 +66,6 @@ def sma_20_50_eod(symbol: str, from_iso: str=FROM_ISO, to_iso: str=TO_ISO, perio
 
 
 if __name__ == "__main__":
-    s = SMACrossover(YDEX_TICKER, 20, 50, "CANDLE_INTERVAL_30_MIN")
+    s = SMACrossover(YDEX_TICKER, 10, 30, "CANDLE_INTERVAL_30_MIN")
     intervals = TINK_INTERVALS
     print(s.tink_test_intervals(YDEX_TICKER, "2026-06-01", "2026-07-01", intervals, "Expectancy"))

@@ -25,9 +25,6 @@ parser.add_argument("--to_iso", type=str, nargs='?', default=TO_ISO, help="Date 
 parser.add_argument("--ticker", type=str, nargs='?', default=YDEX_TICKER, help="Instrument's ticker on which experimental will be trained")
 parser.add_argument("--interval", choices=TINK_INTERVALS, default="CANDLE_INTERVAL_DAY", help="Time interval for a candle to train on")
 parser.add_argument("--seq_len", type=int, nargs='?', default=2, help="Number of candles to train and predict the next value on")
-parser.add_argument("--norm_type", choices=["none", "minmax", "standardize"], nargs='?', default="standardize", help="Type of data normalization for training a experimental")
-parser.add_argument("--scale_y", action=argparse.BooleanOptionalAction, default=False, help="Enable target normalization for training a experimental")
-parser.add_argument("--ma_window", type=int, nargs='?', default=0, help="Denoise data features with exp moving averages with window N")
 parser.add_argument("--val_metric", type=str, nargs='?', default="Root Mean Squared Error", help="Metric for selecting the best experimental")
 
 
@@ -38,11 +35,6 @@ def main():
     to_iso = datetime.fromisoformat(args.to_iso).isoformat()
     interval = args.interval.upper()
     seq_len = args.seq_len
-    match args.norm_type:
-        case "none": norm_type = NormType.NoNorm
-        case "minmax": norm_type = NormType.MinMax
-        case "standardize": norm_type = NormType.Standardize
-        case _: raise ValueError("how")
     val_metric = REG_METRICS_TO_SKLEARN[args.val_metric]
 
     X, y = get_candles_xy(from_iso, to_iso, ticker, interval, to_cache=True)
