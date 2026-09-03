@@ -12,7 +12,6 @@ from strats import SignalStrategyInterface
 from constants import CACHE_DIR_FPATH, FROM_ISO, TO_ISO, EODHD_API_TOKEN, YDEX_TICKER, TINK_INTERVALS
 
 
-# proper object for experiments on tink
 class SMACrossover(SignalStrategyInterface):
     def __init__(self, ticker: str, fast_ma: int, slow_ma: int, interval: str):
         self.ticker = ticker
@@ -20,8 +19,8 @@ class SMACrossover(SignalStrategyInterface):
         self.slow_ma = slow_ma
         self.interval = interval
 
-    def train(self, from_iso: str, to_iso:str, interval: str, to_cache: bool=False, cache_fpath: str=CACHE_DIR_FPATH) -> pd.DataFrame:
-        X, y = get_candles_xy(from_iso, to_iso, self.ticker, interval, log_transform=False, to_cache=to_cache, cache_fpath=cache_fpath)
+    def train(self, from_iso: str, to_iso:str, to_cache: bool=False, cache_fpath: str=CACHE_DIR_FPATH) -> pd.DataFrame:
+        X, y = get_candles_xy(from_iso, to_iso, self.ticker, self.interval, log_transform=False, to_cache=to_cache, cache_fpath=cache_fpath)
         prices = y.reshape(-1)
 
         fast_ma = vbt.MA.run(prices, self.fast_ma)
@@ -33,19 +32,6 @@ class SMACrossover(SignalStrategyInterface):
         stats = pf.stats()
         return stats
 
-    # check this out https://tinkoff.github.io/investAPI/load_history/
-    # so for smaller interval we have to set smaller time period
-    def tink_test_intervals(self, ticker: str, from_iso: str, to_iso: str, intervals: List[str], metric: str) -> str:
-        best_interval = intervals[0]
-        best_metric = -float("inf")
-        for interval_ in intervals:
-            current_metric = self.train(from_iso, to_iso, interval_)[metric]
-            if current_metric > best_metric:
-                print(f"found new best interval for sma{self.fast_ma}-{self.slow_ma}: {interval_}\n\t{metric}: {current_metric:.6f}")
-                best_metric = current_metric
-                best_interval = interval_
-
-        return best_interval
 
 
 # eod example
@@ -66,6 +52,7 @@ def sma_20_50_eod(symbol: str, from_iso: str=FROM_ISO, to_iso: str=TO_ISO, perio
 
 
 if __name__ == "__main__":
-    s = SMACrossover(YDEX_TICKER, 10, 30, "CANDLE_INTERVAL_30_MIN")
-    intervals = TINK_INTERVALS
-    print(s.tink_test_intervals(YDEX_TICKER, "2026-06-01", "2026-07-01", intervals, "Expectancy"))
+    s = SMACrossover(YDEX_TICKER, 20, 50, "CANDLE_INTERVAL_DAY")
+    print(s.train("2026-01-01", "2026-09-01"))
+
+
