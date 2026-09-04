@@ -6,7 +6,7 @@ from sklearn.base import TransformerMixin
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import train_test_split, TimeSeriesSplit
 
-from strats.ma import get_exponential_moving_average
+from strats.moving_average import get_exponential_moving_average
 from constants import TS_MAX_SEQUENCE_LEN, CACHE_DIR_FPATH, CANDLES_MULTI_TRAINING_FEATURES, CANDLES_UNI_TARGET_FEATURE, \
     TEST_SIZE, RANDOM_STATE, TS_MIN_SEQUENCE_LEN
 from data.candles_tink import get_candles_data_consecutive, get_tcandles_df
@@ -91,7 +91,7 @@ def get_candles_xy(from_iso: str, to_iso: str, instrument_id: str, interval: str
         if log_transform:
             candles_df[f"target_{feature}"] = target_log_transform(candles_df[feature])
         else:
-            candles_df[f"target_{feature}"] = candles_df[feature]
+            candles_df[f"target_{feature}"] = candles_df[feature].shift(-1)
 
     candles_df = candles_df.dropna()
 

@@ -1,11 +1,8 @@
-from datetime import datetime
-from typing import List
+# boilerplate
 
 import pandas as pd
-import numpy as np
 import vectorbt as vbt
 
-from data.candles_tink import convert_datetime2api_format
 from preproc.xy import get_candles_xy
 from data.candles_eodhd import download_symbol_candles
 from strats import SignalStrategyInterface
