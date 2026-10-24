@@ -11,7 +11,7 @@ from data.candles_tink import get_candles_data_consecutive, get_tcandles_df
 from constants import YDEX_TICKER
 
 
-def wilders_smooth_values(timeseries: pd.Series, period: int) -> pd.Series:
+def wilders_smooth_values(timeseries: pd.Series, period: int) -> tuple[pd.Series]:
     sval = [np.nan] * (period - 1)
     sval.append(timeseries.iloc[:period].sum())
     for i in range(period, len(timeseries)):
@@ -50,7 +50,7 @@ def calculate_adx(timeseries_df: pd.DataFrame, period: int=14) -> pd.Series:
     # calculate Directional Movement index (DX) and Average DX (ADX)
     dx = (plus_di - minus_di).abs() / (plus_di + minus_di) * 100
     adx = wilders_smooth_values(dx, period) / period
-    return adx
+    return plus_di, minus_di, adx
 
 
 if __name__ == "__main__":
@@ -61,8 +61,10 @@ if __name__ == "__main__":
     # print(df.info())
     # print(df.describe())
 
-    adx_indicator = calculate_adx(df)
-    plt.plot(np.arange(len(df["time"])), (df["close"] - df["close"].min()) / 50, color="red")
-    plt.plot(np.arange(len(df["time"])), adx_indicator)
+    pdi, mdi, adx = calculate_adx(df)
+    plt.plot(np.arange(len(df["time"])), (df["close"] - df["close"].min()), color="red")
+    plt.plot(np.arange(len(df["time"])), adx)
+    plt.plot(np.arange(len(df["time"])), pdi)
+    plt.plot(np.arange(len(df["time"])), mdi)
     plt.show()
 

@@ -1,7 +1,5 @@
 # without this `uv run` can't find constants module
 import os, sys
-from turtledemo.sorting_animate import randomize
-
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 import argparse
